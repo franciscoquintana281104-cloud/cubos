@@ -91,7 +91,7 @@
     }
   }
   .bandeja {
-    position: relative; padding: 4px; border-radius: 18px; color: var(--tinta); cursor: default;
+    position: relative; padding: 4px; border-radius: 16px; color: var(--tinta); cursor: default;
     background: var(--grano), var(--carcasa);
     box-shadow:
       inset 0 4px 10px rgba(0,0,0,.35),
@@ -113,7 +113,7 @@
 
   .bloque {
     position: absolute; left: 0; top: 0; padding: 4.5px;
-    transition: transform .45s cubic-bezier(.22,1,.36,1);
+    will-change: transform;
     user-select: none; -webkit-user-select: none;
   }
   .tablero:not(.listo) .bloque { transition: none; }
@@ -322,6 +322,21 @@
   .bloque.pulsado .cara { transform: translateY(1.5px) scale(.985); }
 
 
+
+  /* ── Transiciones de acabado (inspiradas en uiarc.dev/components/theme-switch) ── */
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+  html[data-vt]::view-transition-old(root) { animation: vt-fondo .75s cubic-bezier(.22,1,.36,1) both; }
+  html[data-vt]::view-transition-new(root) { animation-duration: .75s; animation-timing-function: cubic-bezier(.22,1,.36,1); animation-fill-mode: both; }
+  html[data-vt="reveal"]::view-transition-new(root)  { animation-name: vt-reveal; }
+  html[data-vt="eclipse"]::view-transition-new(root) { animation-name: vt-eclipse; animation-duration: .9s; }
+  html[data-vt="split"]::view-transition-new(root)   { animation-name: vt-split; }
+  html[data-vt="rise"]::view-transition-new(root)    { animation-name: vt-rise; }
+  @keyframes vt-fondo   { to { transform: scale(.97); filter: brightness(.82) blur(1px); } }
+  @keyframes vt-reveal  { from { clip-path: circle(0 at var(--x) var(--y)); } to { clip-path: circle(150vmax at var(--x) var(--y)); } }
+  @keyframes vt-eclipse { from { clip-path: circle(38vmax at -40vmax 40%); } to { clip-path: circle(160vmax at 55% 50%); } }
+  @keyframes vt-split   { from { clip-path: inset(0 50% 0 50%); filter: blur(6px); } to { clip-path: inset(0); filter: none; } }
+  @keyframes vt-rise    { from { clip-path: inset(100% 0 0 0); transform: translateY(6%); } to { clip-path: inset(0); transform: none; } }
+
   @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 
 </style>
@@ -419,6 +434,7 @@ const SONIDOS = {
   rueda(t)  { for (let i = 0; i < 3; i++) tok(t + i * .04, 2100, 1500, .028, .05 - i * .01, .2); },
   muelle(t) { for (let i = 0; i < 6; i++) tok(t + i * .028, 1900 - i * 170, 1300 - i * 120, .03, .05, .2); },
   cuerda(t) { for (let i = 0; i < 8; i++) tok(t + i * .03, 1500 + i * 90, 1100 + i * 80, .025, .04 + i * .004, .2); },
+  barrido(t) { soplo(t, .32, 900, .05); tok(t, 260, 520, .3, .045, .8); tok(t + .05, 900, 1300, .12, .03, .8); },
   flip(t)   { for (let i = 0; i < 2; i++) { soplo(t + i * .09, .05, 1600, .06); tok(t + i * .09, 560, 380, .05, .08, .3); } },
   led(t)    { tok(t, 1600, 2300, .1, .06, .8); },
   tic(t)    { tok(t, 2600, 2200, .014, .012, 0); },
@@ -461,10 +477,20 @@ function ponerAcabado(i) {
   document.querySelector('meta[name="theme-color"]').content = borde;
 }
 ponerAcabado(leer("acabado", 0));
+// Cambio de acabado con una transición de página completa (View Transitions).
+// Cada toque usa la siguiente de las cuatro: reveal, eclipse, split y rise.
+const TRANSICIONES = ["reveal", "eclipse", "split", "rise"];
+let nTransicion = 0;
 document.getElementById("objeto").addEventListener("click", e => {
   if (e.target.id !== "objeto") return;
-  ponerAcabado(leer("acabado", 0) + 1);
-  sonar("tecla");
+  const siguiente = () => ponerAcabado(leer("acabado", 0) + 1);
+  sonar("barrido");
+  const html = document.documentElement;
+  if (!document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) return siguiente();
+  html.style.setProperty("--x", e.clientX + "px");
+  html.style.setProperty("--y", e.clientY + "px");
+  html.dataset.vt = TRANSICIONES[nTransicion++ % TRANSICIONES.length];
+  document.startViewTransition(siguiente).finished.finally(() => delete html.dataset.vt);
 });
 
 const dos = n => String(n).padStart(2, "0");
@@ -762,15 +788,47 @@ function libre(b, x, y) {
     x >= o.x + o.cubo.w || o.x >= x + b.cubo.w || y >= o.y + o.cubo.h || o.y >= y + b.cubo.h);
 }
 
-function colocar(b) { b.el.style.transform = `translate(${b.x * celda}px, ${b.y * celda}px)`; }
+// ── Física: cada cubo va hacia su casilla con un muelle casi crítico ──
+const enMovimiento = new Set();
+function pintarPos(b) { b.el.style.transform = `translate3d(${b.px}px, ${b.py}px, 0)`; }
+function colocar(b, conMuelle = false) {
+  b.tx = b.x * celda; b.ty = b.y * celda;
+  if (conMuelle) { enMovimiento.add(b); return; }
+  enMovimiento.delete(b);
+  b.px = b.tx; b.py = b.ty; b.vx = b.vy = 0;
+  pintarPos(b);
+}
+let tAnterior = 0;
+(function muelles(t) {
+  const dt = Math.min(.032, (t - (tAnterior || t)) / 1000); tAnterior = t;
+  const k = 380, c = 2 * Math.sqrt(k) * .94;   // rigidez y amortiguación (sin rebote que pise a otro cubo)
+  enMovimiento.forEach(b => {
+    const ax = b.px - b.tx, ay = b.py - b.ty;
+    b.vx += (-k * ax - c * b.vx) * dt; b.px += b.vx * dt;
+    b.vy += (-k * ay - c * b.vy) * dt; b.py += b.vy * dt;
+    // Si un lanzamiento se pasa de la casilla contra un tope, se queda en seco: nunca pisa a otro
+    if (ax * (b.px - b.tx) < 0 && !libre(b, b.x + Math.sign(b.px - b.tx), b.y)) { b.px = b.tx; b.vx = 0; }
+    if (ay * (b.py - b.ty) < 0 && !libre(b, b.x, b.y + Math.sign(b.py - b.ty))) { b.py = b.ty; b.vy = 0; }
+    if (Math.abs(b.px - b.tx) < .25 && Math.abs(b.py - b.ty) < .25 && Math.hypot(b.vx, b.vy) < 6) {
+      b.px = b.tx; b.py = b.ty; b.vx = b.vy = 0;
+      enMovimiento.delete(b);
+      const fin = b.alLlegar; b.alLlegar = null; fin?.();
+    }
+    pintarPos(b);
+  });
+  requestAnimationFrame(muelles);
+})();
 
 function medir() {
   const objeto = document.getElementById("objeto"), est = getComputedStyle(objeto);
   const ancho = objeto.clientWidth, alto = objeto.clientHeight - parseFloat(est.paddingTop) - parseFloat(est.paddingBottom);
   if (ancho < 50 || alto < 50) return;   // aún sin tamaño (pestaña oculta): ya llegará un resize
-  const reborde = Math.max(12, ancho * .04), hueco = 8;   // grosor del plástico y relleno de la bandeja
-  celda = Math.min((ancho - 2 * reborde - hueco) / COLS, (alto - 2 * reborde - hueco) / 8);
-  FILAS = Math.max(8, Math.floor((alto - 2 * reborde - hueco) / celda));
+  const reborde = Math.max(7, ancho * .022), hueco = 8;   // grosor del plástico y relleno de la bandeja
+  // Se elige el número de filas que mejor llena el alto y se ajusta la casilla a él,
+  // para que el marco quede igual de fino por los cuatro lados
+  const anchoUtil = ancho - 2 * reborde - hueco, altoUtil = alto - 2 * reborde - hueco;
+  FILAS = Math.max(8, Math.round(altoUtil / (anchoUtil / COLS)));
+  celda = Math.min(anchoUtil / COLS, altoUtil / FILAS);
   Object.assign(tablero.style, { width: COLS * celda + "px", height: FILAS * celda + "px" });
   tablero.style.setProperty("--u", celda + "px");
   // Si una posición guardada ya no cabe o se pisa, todo vuelve a su sitio
@@ -800,69 +858,100 @@ bloques.forEach(b => {
   b.cubo.pintar?.(cara);
 
   el.addEventListener("pointerdown", e => {
-    if (e.target.closest(QUIETO)) return;
-    e.preventDefault();
-    el.setPointerCapture(e.pointerId);
-    el.classList.add("pulsado");
-    let x0 = e.clientX, y0 = e.clientY, bx = b.x, by = b.y;
-    let arrastrando = false, eje = null;
-    const goma = o => Math.sign(o) * Math.min(10, Math.abs(o) * .18);
+    if (b.puntero != null || e.button > 0) return;
+    // Desde un campo o un botón también se puede arrastrar, pero solo si el dedo se mueve:
+    // un toque quieto sigue siendo un toque normal en ese control.
+    const enControl = !!e.target.closest(QUIETO);
+    if (!enControl) { e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch {} el.classList.add("pulsado"); }
+    b.puntero = e.pointerId;
+
+    // Si se coge en pleno vuelo, se parte de donde se ve, no de donde iba
+    enMovimiento.delete(b); b.alLlegar = null;
+    const sx = e.clientX, sy = e.clientY;
+    let x0 = sx - (b.px - b.x * celda), y0 = sy - (b.py - b.y * celda), bx = b.x, by = b.y;
+    let arrastrando = false, eje = null, vel = 0, ultP = null, ultT = 0;
+    const goma = o => Math.sign(o) * Math.min(12, Math.abs(o) * .2);
 
     const mover = ev => {
+      if (ev.pointerId !== b.puntero) return;
+      if (!arrastrando) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < (enControl ? 10 : 6)) return;
+        arrastrando = true;
+        if (enControl) { document.activeElement?.blur(); try { el.setPointerCapture(ev.pointerId); } catch {} }
+        el.classList.remove("pulsado"); el.classList.add("arrastrando"); sonar("coger");
+      }
+      ev.preventDefault();
       let dx = ev.clientX - x0, dy = ev.clientY - y0;
-      if (!arrastrando && Math.hypot(dx, dy) < 8) return;
-      if (!arrastrando) { arrastrando = true; el.classList.remove("pulsado"); el.classList.add("arrastrando"); sonar("coger"); }
-      // Los cubos van en carriles: o en horizontal o en vertical, nunca en diagonal.
-      // Para girar hay que estar encajado en una casilla, tirar claramente hacia el otro lado
-      // y que ese otro carril esté libre. "visible" es cuánto se ve desplazado el cubo
-      // respecto a su casilla (contra un tope, casi nada).
+      // Carriles: o en horizontal o en vertical, nunca en diagonal. Se gira cuando el cubo
+      // está casi encajado, el dedo tira hacia el otro lado y ese carril está libre.
       const visible = () => {
-        const raw = eje === "x" ? dx - (b.x - bx) * celda : dy - (b.y - by) * celda, s = Math.sign(raw);
-        const puede = eje === "x" ? libre(b, b.x + s, b.y) : libre(b, b.x, b.y + s);
-        return puede ? raw : goma(raw);
+        const raw = eje === "x" ? dx - (b.x - bx) * celda : dy - (b.y - by) * celda, sg = Math.sign(raw);
+        return (eje === "x" ? libre(b, b.x + sg, b.y) : libre(b, b.x, b.y + sg)) ? raw : goma(raw);
       };
       const resto = eje ? visible() : 0, otro = eje === "x" ? dy : dx;
       const otroLibre = eje === "x" ? libre(b, b.x, b.y + Math.sign(dy)) : libre(b, b.x + Math.sign(dx), b.y);
-      const girar = eje && Math.abs(resto) < celda * .2 && Math.abs(otro) > celda * .4 && otroLibre;
-      if (!eje || girar) {
-        // Al girar se recoloca solo el eje que se deja, para que el cubo no dé un salto
+      if (!eje || (Math.abs(resto) < celda * .3 && Math.abs(otro) > celda * .3 && otroLibre)) {
+        // Al girar se recoloca el eje que se deja, para que el cubo no dé un salto
         if (eje === "x") { x0 = ev.clientX - resto; bx = b.x; }
         if (eje === "y") { y0 = ev.clientY - resto; by = b.y; }
         dx = ev.clientX - x0; dy = ev.clientY - y0;
-        eje = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+        const nuevo = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+        if (nuevo !== eje) { vel = 0; ultP = null; }
+        eje = nuevo;
       }
       const d = eje === "x" ? dx : dy, ini = eje === "x" ? bx : by;
       const pos = () => eje === "x" ? b.x : b.y;
-      const libreA = s => eje === "x" ? libre(b, b.x + s, b.y) : libre(b, b.x, b.y + s);
+      const libreA = sg => eje === "x" ? libre(b, b.x + sg, b.y) : libre(b, b.x, b.y + sg);
       const objetivo = ini + Math.round(d / celda), antes = pos();
       while (pos() !== objetivo) {
-        const s = Math.sign(objetivo - pos());
-        if (!libreA(s)) break;
-        if (eje === "x") b.x += s; else b.y += s;
+        const sg = Math.sign(objetivo - pos());
+        if (!libreA(sg)) break;
+        if (eje === "x") b.x += sg; else b.y += sg;
       }
       if (pos() !== antes) sonar("paso");
-      // Entre casillas el cubo sigue al dedo; contra un tope solo cede un poco
+      // Entre casillas sigue al dedo 1:1; contra un tope solo cede un poco
       let o = ini * celda + d - pos() * celda;
       o = (o > 0 && !libreA(1)) || (o < 0 && !libreA(-1)) ? goma(o) : Math.max(-celda / 2, Math.min(celda / 2, o));
-      const [ox, oy] = eje === "x" ? [o, 0] : [0, o];
-      el.style.transform = `translate(${b.x * celda + ox}px, ${b.y * celda + oy}px)`;
+      b.px = b.x * celda + (eje === "x" ? o : 0);
+      b.py = b.y * celda + (eje === "y" ? o : 0);
+      pintarPos(b);
+      // Velocidad suavizada a lo largo del carril, para la inercia al soltar
+      const p = eje === "x" ? b.px : b.py, t = ev.timeStamp;
+      if (ultP !== null && t > ultT) vel = .75 * ((p - ultP) / (t - ultT)) + .25 * vel;
+      ultP = p; ultT = t;
     };
+
     const soltar = ev => {
-      el.removeEventListener("pointermove", mover);
-      el.removeEventListener("pointerup", soltar);
-      el.removeEventListener("pointercancel", soltar);
+      if (ev.pointerId !== b.puntero) return;
+      b.puntero = null;
+      ["pointermove", "pointerup", "pointercancel", "lostpointercapture"].forEach(n => el.removeEventListener(n, n === "pointermove" ? mover : soltar));
       el.classList.remove("pulsado", "arrastrando");
-      colocar(b);
-      if (arrastrando) {
-        guardar("posiciones", Object.fromEntries(bloques.map(o => [o.id, [o.x, o.y]])));
-        animar(el, "asentar"); sonar("soltar");
-      } else if (ev.type === "pointerup") {
-        b.cubo.tocar?.(cara);
+      if (!arrastrando) {
+        colocar(b, true);
+        if (!enControl && ev.type === "pointerup") b.cubo.tocar?.(cara);
+        return;
       }
+      // Inercia: un lanzamiento rápido sigue por el carril mientras haya hueco
+      if (ev.timeStamp - ultT > 90) vel = 0;
+      let extra = 0;
+      if (eje && Math.abs(vel) > .25) {
+        const actual = eje === "x" ? b.px : b.py;
+        const destino = Math.round((actual + vel * 170) / celda), sg = Math.sign(vel);
+        while ((eje === "x" ? b.x : b.y) * sg < destino * sg && (eje === "x" ? libre(b, b.x + sg, b.y) : libre(b, b.x, b.y + sg))) {
+          if (eje === "x") b.x += sg; else b.y += sg;
+          extra++;
+        }
+      }
+      for (let i = 0; i < extra; i++) setTimeout(() => sonar("paso"), 45 * (i + 1));
+      if (eje === "x") b.vx = vel * 1000; else b.vy = vel * 1000;
+      b.alLlegar = () => { animar(el, "asentar"); sonar("soltar"); };
+      colocar(b, true);
+      guardar("posiciones", Object.fromEntries(bloques.map(o => [o.id, [o.x, o.y]])));
     };
     el.addEventListener("pointermove", mover);
     el.addEventListener("pointerup", soltar);
     el.addEventListener("pointercancel", soltar);
+    el.addEventListener("lostpointercapture", soltar);
   });
 });
 
@@ -888,7 +977,9 @@ tablero.addEventListener("pointermove", e => {
     b.cara.style.setProperty("--ly", e.clientY - r.top + "px");
   });
 });
-window.addEventListener("resize", medir);
+// Se vuelve a medir siempre que el objeto cambie de tamaño (girar, abrir la app, ventana)
+if (window.ResizeObserver) new ResizeObserver(() => medir()).observe(document.getElementById("objeto"));
+else window.addEventListener("resize", medir);
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js");
 document.fonts?.ready.then(medir);
 </script>

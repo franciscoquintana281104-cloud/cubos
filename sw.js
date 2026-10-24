@@ -1,7 +1,7 @@
 // Service worker: la app abre sin conexión.
 // La página se pide primero a la red (así llegan las actualizaciones solas)
 // y, si no hay red, sale de la caché. El resto (iconos, tipografías) va de caché.
-const CACHE = "cubos-v2";
+const CACHE = "cubos-v3";
 const BASICOS = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png", "icono-180.png"];
 
 self.addEventListener("install", e => {
