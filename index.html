@@ -647,6 +647,7 @@
 
   /* Pulsación: un cubo que se toca cede un instante, como una tecla grande */
   .cara.pulsar { animation: pulsar .24s cubic-bezier(.3,1.4,.5,1); }
+  .cara.niega { animation: niega .4s ease; }
   @keyframes pulsar { 35% { transform: translateY(1.5px) scale(.985); } }
   .cara.suena { animation: suena-cubo .5s ease-in-out 3; }
   @keyframes suena-cubo { 25% { transform: rotate(-1.4deg); } 75% { transform: rotate(1.4deg); } }
@@ -2035,10 +2036,61 @@ function avanzar(b, eje, destino) {
   return nuevo !== destino;
 }
 
+// ── Pasar un cubo a otra página ──
+// Se empuja contra el borde izquierdo o derecho de la bandeja: la página de al lado asoma, y si
+// se sigue empujando un instante el cubo pasa a ella, sin soltarlo del dedo.
+function empujeBorde(b, a, d, dt) {
+  const deseoX = (a.g.x + d.x) / celda, w = b.cubo.w;
+  let dir = 0;
+  if (b.x >= COLS - w - .02 && deseoX - b.x > .4) dir = 1;
+  else if (b.x <= .02 && deseoX - b.x < -.4) dir = -1;
+  const destino = b.pag + dir;
+  if (!dir || destino < 0 || destino >= PAGINAS.length) { a.borde = Math.min(0, a.borde || 0); return false; }
+  if (!a.movido) { a.movido = true; clearTimeout(a.reloj); }
+  a.borde = (a.bordeDir === dir ? a.borde || 0 : 0) + dt; a.bordeDir = dir;
+  pag.asomo = dir * Math.min(.16, .05 + Math.max(0, a.borde) * .3);
+  if (a.borde < .45) return false;
+  return moverDePagina(b, a, dir);
+}
+
+function moverDePagina(b, a, dir) {
+  const destino = b.pag + dir, w = b.cubo.w, h = b.cubo.h;
+  const entrada = dir > 0 ? 0 : COLS - w, fila = Math.min(FILAS - h, Math.max(0, b.y));
+  const prueba = { id: b.id, cubo: b.cubo, pag: destino, x: -99, y: -99 };
+  // El sitio libre más cercano a donde entraría: pegado al borde por el que llega, a su misma altura
+  let mejor = null, dist = Infinity;
+  const probar = (x, y) => {
+    if (!libre(prueba, x, y)) return;
+    const dd = Math.abs(x - entrada) * 1.5 + Math.abs(y - fila);
+    if (dd < dist) { dist = dd; mejor = [x, y]; }
+  };
+  probar(entrada, fila);
+  for (let y = 0; y + h <= FILAS; y++) for (let x = 0; x + w <= COLS; x++) probar(x, y);
+  if (!mejor) {
+    // No cabe en la otra página: el cubo se niega con un temblor
+    animar(b.cara, "niega"); sonar("muelle"); try { navigator.vibrate?.([10, 40, 10]); } catch {}
+    a.borde = -.8;
+    return false;
+  }
+  b.pag = destino;
+  paginasEl[destino].appendChild(b.el);
+  [b.x, b.y] = mejor;
+  pintarPos(b); fijarColumna(b);
+  guardar("paginaDe", Object.fromEntries(bloques.map(o => [o.id, o.pag])));
+  guardarPosiciones();
+  irAPagina(destino);
+  sonar("coger");
+  // Sigue en el dedo, ya en la página nueva
+  Object.assign(a, { g: { x: b.x * celda, y: b.y * celda }, fx0: a.fx, fy0: a.fy, eje: null, v: 0, ultimo: undefined, borde: -.5 });
+  b.el.classList.remove("arrastrando");
+  return true;
+}
+
 function seguirDedo(b, dt) {
   const a = b.arr, c = celda;
   const d = { x: a.fx - a.fx0, y: a.fy - a.fy0 };
   if (a.largo) return;
+  if (empujeBorde(b, a, d, dt)) return;
   if (!a.eje) {
     if (Math.hypot(d.x, d.y) < 5) return;
     a.movido = true; clearTimeout(a.reloj);
@@ -2133,6 +2185,11 @@ function pasoFisica(dt) {
     const antes = pag.p;
     pag.p += (p - pag.p) * (1 - Math.exp(-dt * 40));
     pag.v = pag.v * .3 + ((pag.p - antes) / dt) * .7;
+    pintarPaginas();
+  } else if (pag.asomo != null) {
+    // Un cubo empuja contra el borde: la página de al lado asoma un poco
+    pag.p += (pag.objetivo + pag.asomo - pag.p) * (1 - Math.exp(-dt * 14));
+    pag.v = 0; pag.asomo = null;
     pintarPaginas();
   } else if (!pag.arr && Math.abs(pag.p - pag.objetivo) > .0005 || Math.abs(pag.v) > .002) {
     const k = 210, c = 2 * Math.sqrt(k) * .78;
