@@ -91,7 +91,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; overflow: hidden; }
   /* En el móvil, lo que haya detrás del objeto es del color del reborde: nunca un hueco blanco */
-  @media (max-width: 520px), (display-mode: standalone) { html, body { background: var(--grano), var(--borde-mat, var(--borde, #2f5bd3)); } }
+  @media (max-width: 520px), (display-mode: standalone) { html, body { background: var(--grano), var(--pie, var(--borde, #2f5bd3)); background-color: var(--pie, var(--borde, #2f5bd3)); } }
   .objeto, .objeto * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .objeto input, .objeto textarea { -webkit-user-select: text; user-select: text; }
   body {
@@ -1081,19 +1081,19 @@ const FAMILIAS = [
   { n: "braun", nombre: "Braun", borde: "#ec5a20", tema: "crema", fondo: "perforado", bandeja: "#d9d5cc", trama: "rgba(0,0,0,.13)", led: "#ffffff",
     timbre: { tono: .95, sala: .12, brillo: 6000 },
     d: { reloj: "braun", fecha: "abatible", foco: "cocina", tareas: "teclas", notas: "pautado", calendario: "plastico", agua: "leds", animo: "rueda", frase: "plastico", contador: "plastico", dado: "plastico", habitos: "puntos", respira: "burbuja" } },
-  { n: "laboratorio", nombre: "Laboratorio", borde: "#b7bcc2", bordeMat: "repeating-linear-gradient(90deg, rgba(255,255,255,.2) 0 1px, rgba(0,0,0,.035) 1px 3px), linear-gradient(160deg, #eceef0 0%, #b9bec5 60%, #a2a8b0 100%)",
+  { n: "laboratorio", nombre: "Laboratorio", borde: "#b7bcc2", pie: "#a7adb4", bordeMat: "repeating-linear-gradient(90deg, rgba(255,255,255,.2) 0 1px, rgba(0,0,0,.035) 1px 3px), linear-gradient(160deg, #eceef0 0%, #b9bec5 60%, #a2a8b0 100%)",
     tema: "gris", fondo: "rejilla", bandeja: "#eef0ee", trama: "rgba(40,70,110,.13)", led: "#d8361f",
     timbre: { tono: 1.14, sala: .07, brillo: 9500 },
     d: { reloj: "estacion", fecha: "sello", foco: "aguja", tareas: "panel", notas: "papel", calendario: "papel", agua: "probeta", animo: "aguja", frase: "dymo", contador: "rodillo", dado: "rubi", habitos: "perforadora", respira: "ondas" } },
-  { n: "ochenta", nombre: "Ochenta", borde: "#2c2e33", bordeMat: "radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,.08), transparent 60%), linear-gradient(170deg, #3d4046, #222428)",
+  { n: "ochenta", nombre: "Ochenta", borde: "#2c2e33", pie: "#232529", bordeMat: "radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,.08), transparent 60%), linear-gradient(170deg, #3d4046, #222428)",
     tema: "ochenta", fondo: "carbono", bandeja: "#131417", led: "#ff4f9a",
     timbre: { tono: 1.28, sala: .1, brillo: 6500, onda: "triangle" },
     d: { reloj: "lcd", fecha: "lcd", foco: "lcd", tareas: "teclas", notas: "terminal", calendario: "lcd", agua: "leds", animo: "pixel", frase: "ticker", contador: "lcd", dado: "plastico", habitos: "leds", respira: "ondas" } },
-  { n: "madera", nombre: "Madera", borde: "#7a4b2a", bordeMat: "repeating-linear-gradient(91deg, rgba(0,0,0,.08) 0 2px, transparent 2px 9px), repeating-linear-gradient(88deg, rgba(255,220,170,.06) 0 1px, transparent 1px 15px), linear-gradient(175deg, #8f5f3a, #5e3a20)",
+  { n: "madera", nombre: "Madera", borde: "#7a4b2a", pie: "#5f3b21", bordeMat: "repeating-linear-gradient(91deg, rgba(0,0,0,.08) 0 2px, transparent 2px 9px), repeating-linear-gradient(88deg, rgba(255,220,170,.06) 0 1px, transparent 1px 15px), linear-gradient(175deg, #8f5f3a, #5e3a20)",
     tema: "madera", fondo: "lino", bandeja: "#e6ddca", trama: "rgba(60,40,20,.12)", led: "#ffd9a0",
     timbre: { tono: .8, sala: .28, brillo: 3600 },
     d: { reloj: "palabras", fecha: "sello", foco: "cocina~madera", tareas: "papel", notas: "papel", calendario: "papel", agua: "rodillo", animo: "rueda~madera", frase: "dymo", contador: "rodillo", dado: "madera", habitos: "perforadora", respira: "burbuja" } },
-  { n: "holo", nombre: "Holo", borde: "#c9b8f0", bordeMat: "conic-gradient(from 200deg at 30% 20%, #f6d5f7, #fbe9d7, #c9f0e4, #cfe0ff, #e3d1ff, #f6d5f7)",
+  { n: "holo", nombre: "Holo", borde: "#c9b8f0", pie: "#e4d6f7", bordeMat: "conic-gradient(from 200deg at 30% 20%, #f6d5f7, #fbe9d7, #c9f0e4, #cfe0ff, #e3d1ff, #f6d5f7)",
     tema: "holo", fondo: "liso", bandeja: "#efeaf8", trama: "rgba(80,60,140,.1)", led: "#b07cff",
     timbre: { tono: 1.2, sala: .4, brillo: 8000 },
     d: { reloj: "anillos", fecha: "abatible~cristal", foco: "cocina~cristal", tareas: "teclas~cristal", notas: "pautado~cristal", calendario: "plastico~cristal", agua: "leds~cristal", animo: "rueda~cristal", frase: "plastico~cristal", contador: "plastico~cristal", dado: "plastico~cristal", habitos: "puntos~cristal", respira: "burbuja~cristal" } },
@@ -1106,6 +1106,7 @@ function ponerFamilia(i) {
   raiz.setProperty("--borde", f.borde);
   if (f.bordeMat) raiz.setProperty("--borde-mat", f.bordeMat); else raiz.removeProperty("--borde-mat");
   raiz.setProperty("--led-on", f.led);
+  raiz.setProperty("--pie", f.pie || f.borde);
   bandejaEl.dataset.tema = f.tema;
   if (f.bandeja) bandejaEl.style.setProperty("--bandeja-base", f.bandeja); else bandejaEl.style.removeProperty("--bandeja-base");
   if (f.trama) bandejaEl.style.setProperty("--trama", f.trama); else bandejaEl.style.removeProperty("--trama");
@@ -2145,10 +2146,16 @@ let tAnterior = 0;
 
 // iPhone instalado como app: con la barra de estado translúcida, el alto que da el sistema no
 // incluye esa franja y abajo quedaba un hueco blanco. Se fuerza el alto de la pantalla entera.
+// iPhone instalado como app: el sistema da a la página la altura sin la franja de la barra de
+// estado, y lo que va "fijado" a la pantalla no puede pasar de ahí; abajo quedaba un recuadro y la
+// barbilla cortada. El objeto pasa a ir colocado normal y se estira a la pantalla entera.
 function altoCompleto() {
-  const objeto = document.getElementById("objeto");
+  const objeto = document.getElementById("objeto"), raiz = document.documentElement;
   const instalada = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
-  objeto.style.height = instalada ? Math.max(innerHeight, screen.height) + "px" : "";
+  if (!instalada) { objeto.style.cssText = ""; raiz.style.height = document.body.style.height = ""; return; }
+  const alto = Math.max(innerHeight, screen.height, document.documentElement.clientHeight) + "px";
+  raiz.style.height = document.body.style.height = alto;
+  Object.assign(objeto.style, { position: "absolute", top: "0", left: "0", right: "0", bottom: "auto", height: alto });
 }
 altoCompleto();
 addEventListener("orientationchange", () => setTimeout(() => { altoCompleto(); medir(); }, 300));
