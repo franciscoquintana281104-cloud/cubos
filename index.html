@@ -90,26 +90,20 @@
         0 40px 80px rgba(0,0,0,.55), 0 14px 30px rgba(0,0,0,.35);
     }
   }
+  /* Bandeja: metal perforado oscuro, teñido con el color del reborde */
   .bandeja {
     position: relative; padding: 4px; border-radius: 16px; color: var(--tinta); cursor: default;
-    background: var(--grano), var(--carcasa);
+    background:
+      radial-gradient(circle, rgba(255,255,255,.075) 1px, transparent 1.6px) 0 0 / 11px 11px,
+      radial-gradient(120% 70% at 50% 0%, rgba(255,255,255,.06), transparent 60%),
+      color-mix(in srgb, var(--borde) 16%, #141414);
     box-shadow:
-      inset 0 4px 10px rgba(0,0,0,.35),
-      inset 0 1px 2px rgba(0,0,0,.4),
-      inset 0 0 0 1px rgba(0,0,0,.18),
-      0 1.5px 0 rgba(255,255,255,.35),
-      0 -1px 0 rgba(0,0,0,.18);
+      inset 0 5px 14px rgba(0,0,0,.55),
+      inset 0 1px 2px rgba(0,0,0,.6),
+      inset 0 0 0 1px rgba(0,0,0,.35);
     transition: background-color .4s, color .4s;
   }
-  /* Carriles: una ranura por cada fila y cada columna */
-  .tablero {
-    position: relative; touch-action: none;
-    background:
-      linear-gradient(to bottom, transparent calc(50% - 1.5px), var(--ranura, rgba(0,0,0,.16)) calc(50% - 1.5px) calc(50% + .5px), var(--brillo-ranura, rgba(255,255,255,.3)) calc(50% + .5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)) 0 0 / 100% var(--u),
-      linear-gradient(to right, transparent calc(50% - 1.5px), var(--ranura, rgba(0,0,0,.16)) calc(50% - 1.5px) calc(50% + .5px), var(--brillo-ranura, rgba(255,255,255,.3)) calc(50% + .5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)) 0 0 / var(--u) 100%;
-    border-radius: 14px;
-  }
-  [data-tema="noche"] { --ranura: rgba(0,0,0,.55); --brillo-ranura: rgba(255,255,255,.07); }
+  .tablero { position: relative; touch-action: none; border-radius: 12px; }
 
   .bloque {
     position: absolute; left: 0; top: 0; padding: 4.5px;
@@ -142,7 +136,6 @@
     background-position: 0 0, 100% 0, 0 100%, 100% 100%;
     mix-blend-mode: multiply;
   }
-  .bloque.arrastrando .cara { transform: translateY(-3px); box-shadow: inset 0 0 0 1px rgba(0,0,0,.07), 0 14px 26px rgba(0,0,0,.2); }
 
   .titulo {
     font-family: "IBM Plex Mono", monospace; font-weight: 500;
@@ -280,8 +273,6 @@
   .pie .ranuras i { width: 8px; height: 2px; border-radius: 1px; background: currentColor; opacity: .5; }
 
   /* ── Mecánica ── */
-  .bloque.asentar .cara { animation: asentar .5s cubic-bezier(.22,1,.36,1); }
-  @keyframes asentar { 0% { transform: translateY(-3px) scale(1.02); } 100% { transform: none; } }
 
   .reloj { perspective: 300px; }
   .reloj > * { transform-origin: 50% 50%; }
@@ -314,12 +305,6 @@
   /* Entrada: los cubos se ensamblan uno tras otro al abrir */
   .bloque.entra .cara { animation: entra .8s cubic-bezier(.22,1,.36,1) both; animation-delay: var(--retardo); }
   @keyframes entra { 0% { opacity: 0; transform: translateY(22px) scale(.92); } 100% { opacity: 1; transform: none; } }
-
-  @media (hover: hover) {
-    .bloque:not(.arrastrando):hover .cara { transform: translateY(-1px); }
-  }
-
-
 
   /* ── Transiciones de acabado (inspiradas en uiarc.dev/components/theme-switch) ── */
   ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
@@ -464,7 +449,7 @@ const ACABADOS = [
   { borde: "#2f5bd3", tema: "bauhaus" },
   { borde: "#f5c400", tema: "gris" },
   { borde: "#1f1f1f", tema: "noche" },
-  { borde: "#e9e5dc", tema: "crema" },
+  { borde: "#1f8a5b", tema: "crema" },
 ];
 function ponerAcabado(i) {
   i = ((i % ACABADOS.length) + ACABADOS.length) % ACABADOS.length;
@@ -781,51 +766,64 @@ const bloques = Object.entries(CUBOS).map(([id, cubo]) => {
 });
 let celda = 0;
 
+// Las posiciones son continuas (en casillas, con decimales): un cubo se queda justo
+// donde lo sueltas, como una pieza de madera en su bandeja. Nada lo recoloca después.
+const E = 1e-4;
 function libre(b, x, y) {
-  if (x < 0 || y < 0 || x + b.cubo.w > COLS || y + b.cubo.h > FILAS) return false;
+  if (x < -E || y < -E || x + b.cubo.w > COLS + E || y + b.cubo.h > FILAS + E) return false;
   return bloques.every(o => o === b ||
-    x >= o.x + o.cubo.w || o.x >= x + b.cubo.w || y >= o.y + o.cubo.h || o.y >= y + b.cubo.h);
+    x >= o.x + o.cubo.w - E || o.x >= x + b.cubo.w - E || y >= o.y + o.cubo.h - E || o.y >= y + b.cubo.h - E);
 }
 
-// ── Física ──────────────────────────────────────────────────
-// Mientras se arrastra, el cubo persigue al dedo con un suavizado exponencial y nunca sale
-// de su "pasillo": las casillas libres contiguas en su carril. Al soltarlo, un muelle lo
-// lleva a la casilla más cercana a donde le llevaría la inercia.
-const enMovimiento = new Set();
-const SEGUIR = 32;                               // lo pegado que va al dedo (más = más directo)
-const MUELLE = 340, AMORT = 2 * Math.sqrt(340) * .86;
-
-function pintarPos(b) { b.el.style.transform = `translate3d(${b.px}px, ${b.py}px, 0)`; }
-function colocar(b, conMuelle = false) {
-  b.tx = b.x * celda; b.ty = b.y * celda;
-  if (conMuelle) { enMovimiento.add(b); return; }
-  enMovimiento.delete(b);
-  b.px = b.tx; b.py = b.ty; b.vx = b.vy = 0;
-  pintarPos(b);
-}
-
-// Casillas libres seguidas a ambos lados de (cx, cy) en un eje: [primera, última]
-function pasillo(b, eje, cx, cy) {
-  const ok = n => eje === "x" ? libre(b, n, cy) : libre(b, cx, n);
-  let lo = eje === "x" ? cx : cy, hi = lo;
-  while (ok(lo - 1)) lo--;
-  while (ok(hi + 1)) hi++;
+// Cuánto puede ir un cubo en un eje antes de tocar el borde u otro cubo: [mínimo, máximo]
+function pasillo(b, eje) {
+  const w = b.cubo.w, h = b.cubo.h;
+  let lo = 0, hi = eje === "x" ? COLS - w : FILAS - h;
+  for (const o of bloques) {
+    if (o === b) continue;
+    if (eje === "x") {
+      if (!(o.y < b.y + h - E && b.y < o.y + o.cubo.h - E)) continue;
+      if (o.x + o.cubo.w <= b.x + E) lo = Math.max(lo, o.x + o.cubo.w); else hi = Math.min(hi, o.x - w);
+    } else {
+      if (!(o.x < b.x + w - E && b.x < o.x + o.cubo.w - E)) continue;
+      if (o.y + o.cubo.h <= b.y + E) lo = Math.max(lo, o.y + o.cubo.h); else hi = Math.min(hi, o.y - h);
+    }
+  }
   return [lo, hi];
 }
 const puedeIr = (b, eje, sg) => {
-  const [lo, hi] = pasillo(b, eje, b.x, b.y), aqui = eje === "x" ? b.x : b.y;
-  return sg > 0 ? hi > aqui : sg < 0 ? lo < aqui : false;
+  const [lo, hi] = pasillo(b, eje);
+  return sg > 0 ? hi > b[eje] + .002 : sg < 0 ? lo < b[eje] - .002 : false;
 };
 
+// ── Física ──────────────────────────────────────────────────
+// Los eventos solo apuntan dónde está el dedo; en cada fotograma el cubo lo persigue con un
+// suavizado corto, sin salir de su pasillo. Al soltarlo sigue con la velocidad del dedo y
+// frena por rozamiento, o se para en seco contra un tope. No hay encaje a casillas.
+const deslizando = new Set();
+const SEGUIR = 34;          // lo pegado que va al dedo (más = más directo)
+const ROCE = 5.2;           // rozamiento de la inercia (más = frena antes)
+
+function pintarPos(b) { b.el.style.transform = `translate3d(${b.x * celda}px, ${b.y * celda}px, 0)`; }
+function colocar(b) { deslizando.delete(b); pintarPos(b); }
+
+// Mueve el cubo en su eje hasta "destino" (en casillas) sin atravesar nada. Devuelve si chocó.
+function avanzar(b, eje, destino) {
+  const [lo, hi] = pasillo(b, eje), antes = b[eje];
+  const nuevo = Math.min(hi, Math.max(lo, destino));
+  if (Math.round(antes) !== Math.round(nuevo)) sonar("paso");   // un clic suave al cruzar cada casilla
+  b[eje] = nuevo;
+  return nuevo !== destino;
+}
+
 function seguirDedo(b, dt) {
-  const a = b.arr, dx = a.fx - a.fx0, dy = a.fy - a.fy0;
+  const a = b.arr, c = celda;
+  const d = { x: a.fx - a.fx0, y: a.fy - a.fy0 };
   if (!a.eje) {
-    if (Math.hypot(dx, dy) < 6) return;
+    if (Math.hypot(d.x, d.y) < 5) return;
     a.movido = true;
-    // Se elige el carril hacia el que tira el dedo; si por ahí no hay hueco, el otro.
-    // Si no hay hueco en ninguno, el cubo se queda totalmente quieto.
-    const [prim, seg] = Math.abs(dx) >= Math.abs(dy) ? ["x", "y"] : ["y", "x"];
-    const d = { x: dx, y: dy };
+    // Carril hacia el que tira el dedo; si por ahí no hay hueco, el otro; si tampoco, quieto.
+    const [prim, seg] = Math.abs(d.x) >= Math.abs(d.y) ? ["x", "y"] : ["y", "x"];
     if (puedeIr(b, prim, Math.sign(d[prim]))) a.eje = prim;
     else if (Math.abs(d[seg]) > 4 && puedeIr(b, seg, Math.sign(d[seg]))) a.eje = seg;
     else return;
@@ -833,35 +831,22 @@ function seguirDedo(b, dt) {
     b.el.classList.add("arrastrando");
     sonar("coger");
   }
-  const c = celda, deseo = { x: a.gx + dx, y: a.gy + dy };
+  const deseo = { x: (a.g.x + d.x) / c, y: (a.g.y + d.y) / c };   // donde estaría si siguiera al dedo, en casillas
   const eje = a.eje, otro = eje === "x" ? "y" : "x";
-  const pos = eje === "x" ? "px" : "py";
 
-  // ¿Girar de carril? Solo casi encajado, tirando claro hacia el otro lado y con hueco allí
-  const celdaAhora = Math.round(b[pos] / c), resto = b[pos] - celdaAhora * c;
-  const tiron = deseo[otro] - (otro === "x" ? b.x : b.y) * c;
-  if (Math.abs(resto) < c * .32 && Math.abs(tiron) > c * .35) {
-    const prev = eje === "x" ? b.x : b.y;
-    if (eje === "x") b.x = celdaAhora; else b.y = celdaAhora;
-    if (puedeIr(b, otro, Math.sign(tiron))) { a.eje = otro; return seguirDedo(b, dt); }
-    if (eje === "x") b.x = prev; else b.y = prev;
+  // Cambio de carril: el dedo tira claramente hacia el otro eje y por ahí hay hueco
+  const tiron = deseo[otro] - b[otro], error = Math.abs(deseo[eje] - b[eje]);
+  if (Math.abs(tiron) > .3 && Math.abs(tiron) > error * 1.2 && puedeIr(b, otro, Math.sign(tiron))) {
+    a.g[eje] = b[eje] * c - d[eje];     // el eje que se deja queda donde está, sin saltos al volver
+    a.eje = otro; a.v = 0; a.ultimo = undefined;
+    return seguirDedo(b, dt);
   }
 
-  const [lo, hi] = pasillo(b, eje, b.x, b.y);
-  const objetivo = Math.min(hi * c, Math.max(lo * c, deseo[eje]));
-  const f = 1 - Math.exp(-dt * SEGUIR);
-  b[pos] += (objetivo - b[pos]) * f;
-  const fijo = otro === "x" ? "px" : "py";       // el otro eje se encaja en su carril
-  b[fijo] += ((otro === "x" ? b.x : b.y) * c - b[fijo]) * f;
-
-  // Velocidad del dedo (no del cubo, que va un pelín por detrás) para la inercia al soltar
-  if (a.deseoAnt !== undefined && a.ejeAnt === eje) a.v = a.v * .35 + ((deseo[eje] - a.deseoAnt) / dt) * .65;
-  a.deseoAnt = deseo[eje]; a.ejeAnt = eje;
-  const nueva = Math.min(hi, Math.max(lo, Math.round(b[pos] / c)));
-  if (nueva !== (eje === "x" ? b.x : b.y)) {
-    if (eje === "x") b.x = nueva; else b.y = nueva;
-    sonar("paso");
-  }
+  const antes = b[eje];
+  avanzar(b, eje, antes + (deseo[eje] - antes) * (1 - Math.exp(-dt * SEGUIR)));
+  // Velocidad del dedo (casillas/s) para la inercia al soltar
+  if (a.ultimo !== undefined) a.v = a.v * .35 + ((deseo[eje] - a.ultimo) / dt) * .65;
+  a.ultimo = deseo[eje];
   pintarPos(b);
 }
 
@@ -873,32 +858,23 @@ function soltarCubo(b, ev) {
     if (!a.movido && !a.enControl && ev.type === "pointerup") b.cubo.tocar?.(b.cara);
     return;
   }
-  // Inercia: hasta dónde llegaría con la velocidad que llevaba, dentro de su pasillo
-  const eje = a.eje, pos = eje === "x" ? "px" : "py", c = celda;
-  const v = performance.now() - a.tUlt > 80 ? 0 : a.v;
-  const [lo, hi] = pasillo(b, eje, b.x, b.y);
-  const destino = Math.min(hi, Math.max(lo, Math.round((b[pos] + v * .16) / c)));
-  const recorrido = Math.abs(destino - (eje === "x" ? b.x : b.y));
-  if (eje === "x") { b.x = destino; b.vx = v; b.vy = 0; } else { b.y = destino; b.vy = v; b.vx = 0; }
-  for (let i = 0; i < recorrido; i++) setTimeout(() => sonar("paso"), 55 * (i + 1));
-  b.alLlegar = () => { animar(b.el, "asentar"); sonar("soltar"); };
-  colocar(b, true);
-  guardar("posiciones", Object.fromEntries(bloques.map(o => [o.id, [o.x, o.y]])));
+  const v = performance.now() - a.tUlt > 80 ? 0 : Math.max(-30, Math.min(30, a.v));
+  if (Math.abs(v) > .8) { b.desliz = { eje: a.eje, v }; deslizando.add(b); }
+  else guardarPosiciones();
 }
+
+const guardarPosiciones = () => guardar("posiciones", Object.fromEntries(bloques.map(o => [o.id, [+o.x.toFixed(4), +o.y.toFixed(4)]])));
 
 function pasoFisica(dt) {
   bloques.forEach(b => b.arr && seguirDedo(b, dt));
-  enMovimiento.forEach(b => {
-    const ax = b.px - b.tx, ay = b.py - b.ty;
-    b.vx += (-MUELLE * ax - AMORT * b.vx) * dt; b.px += b.vx * dt;
-    b.vy += (-MUELLE * ay - AMORT * b.vy) * dt; b.py += b.vy * dt;
-    // Si se pasa de la casilla y al otro lado hay un tope, se queda en seco: nunca pisa a otro
-    if (ax * (b.px - b.tx) < 0 && !libre(b, b.x + Math.sign(b.px - b.tx), b.y)) { b.px = b.tx; b.vx = 0; }
-    if (ay * (b.py - b.ty) < 0 && !libre(b, b.x, b.y + Math.sign(b.py - b.ty))) { b.py = b.ty; b.vy = 0; }
-    if (Math.abs(b.px - b.tx) < .2 && Math.abs(b.py - b.ty) < .2 && Math.hypot(b.vx, b.vy) < 5) {
-      b.px = b.tx; b.py = b.ty; b.vx = b.vy = 0;
-      enMovimiento.delete(b);
-      const fin = b.alLlegar; b.alLlegar = null; fin?.();
+  deslizando.forEach(b => {
+    const s = b.desliz;
+    s.v *= Math.exp(-dt * ROCE);
+    const choco = avanzar(b, s.eje, b[s.eje] + s.v * dt);
+    if (choco || Math.abs(s.v) < .05) {
+      if (choco) sonar(Math.abs(s.v) > 3 ? "soltar" : "paso");
+      deslizando.delete(b); b.desliz = null;
+      guardarPosiciones();
     }
     pintarPos(b);
   });
@@ -953,9 +929,9 @@ bloques.forEach(b => {
     // un toque quieto sigue siendo un toque normal en ese control.
     const enControl = !!e.target.closest(QUIETO);
     if (!enControl) { e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch {} }
-    enMovimiento.delete(b); b.alLlegar = null;      // si estaba en vuelo, se coge donde se ve
+    deslizando.delete(b); b.desliz = null;          // si iba deslizando, se coge donde está
     b.arr = { id: e.pointerId, enControl, fx0: e.clientX, fy0: e.clientY, fx: e.clientX, fy: e.clientY,
-              gx: b.px, gy: b.py, eje: null, movido: false, v: 0, tUlt: performance.now() };
+              g: { x: b.x * celda, y: b.y * celda }, eje: null, movido: false, v: 0, tUlt: performance.now() };
 
     const mover = ev => {
       if (!b.arr || ev.pointerId !== b.arr.id) return;
