@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Botón de tienda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --borde: #2f5bd3; --base: color-mix(in srgb, var(--borde) 16%, #141414);
+    --naranja: #ff5b1a; --amarillo: #f5c400; --negro: #1d1d1b; --blanco: #f7f5f0; --gris: #cbc8bf;
+    --grano: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; min-height: 100vh; color: #ecebe6;
+    background: radial-gradient(90% 70% at 50% 20%, #2c2d31 0%, #161619 60%, #0e0e10 100%);
+    font-family: "Inter Tight", "Helvetica Neue", Helvetica, sans-serif;
+  }
+  header { max-width: 1100px; margin: 0 auto; padding: 40px 24px 8px; }
+  h1 { font-size: 34px; letter-spacing: -.04em; margin: 0 0 6px; }
+  header p { margin: 0; opacity: .6; font-size: 15px; max-width: 620px; line-height: 1.45; }
+  .rejilla {
+    max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 34px 24px;
+  }
+  figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  figcaption { text-align: center; }
+  figcaption b { display: block; font-size: 17px; letter-spacing: -.02em; }
+  figcaption span { display: block; font-size: 13px; opacity: .55; margin-top: 4px; line-height: 1.4; max-width: 230px; }
+  .letra { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .14em; opacity: .5; }
+
+  /* ── El objeto en pequeño ── */
+  .objeto {
+    position: relative; width: 220px; height: 464px; border-radius: 30px;
+    padding: 8px 8px 22px;
+    background: var(--grano), linear-gradient(165deg, rgba(255,255,255,.2), rgba(255,255,255,0) 35%, rgba(0,0,0,.14)), var(--borde);
+    box-shadow: inset 0 2px 1px rgba(255,255,255,.4), inset 0 -3px 2px rgba(0,0,0,.2), 0 30px 50px rgba(0,0,0,.5);
+    user-select: none;
+  }
+  .bandeja {
+    position: relative; height: 100%; border-radius: 14px; overflow: hidden;
+    background: radial-gradient(circle, rgba(255,255,255,.075) 1px, transparent 1.6px) 0 0 / 9px 9px, var(--base);
+    box-shadow: inset 0 4px 12px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.35);
+    perspective: 700px;
+  }
+  .leds { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; gap: 6px; }
+  .leds i { width: 5px; height: 5px; border-radius: 50%; background: rgba(0,0,0,.35); box-shadow: inset 0 1px 1px rgba(0,0,0,.4); }
+  .leds i:first-child { background: #fff; box-shadow: 0 0 5px rgba(255,255,255,.9); }
+
+  .cubo {
+    position: absolute; border-radius: 9px; padding: 7px 8px;
+    background: var(--grano), linear-gradient(170deg, rgba(255,255,255,.16), rgba(255,255,255,0) 40%, rgba(0,0,0,.05)), var(--c);
+    color: var(--t, #1c1c1b);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), inset 0 1.5px 0 rgba(255,255,255,.4), inset 0 -2px 0 rgba(0,0,0,.1), 0 2px 0 rgba(0,0,0,.16), 0 6px 12px rgba(0,0,0,.12);
+    font-family: "IBM Plex Mono", monospace; font-size: 7.5px; letter-spacing: .1em; font-weight: 600;
+  }
+  .cubo .grande { font-family: "Inter Tight", sans-serif; font-size: 26px; letter-spacing: -.04em; font-weight: 500; display: block; margin-top: 10px; }
+
+  /* ── Botones de tienda (cuatro propuestas) ── */
+  .boton { position: absolute; cursor: pointer; z-index: 5; }
+
+  /* A · Tecla en la barbilla */
+  .tecla {
+    left: 50%; bottom: 4px; width: 46px; height: 13px; margin-left: 30px; border-radius: 7px;
+    background: linear-gradient(#fff3, #0000), color-mix(in srgb, var(--borde) 70%, #000);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 2px 0 rgba(0,0,0,.45), 0 3px 6px rgba(0,0,0,.25);
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+    font-family: "IBM Plex Mono", monospace; font-size: 7px; font-weight: 600; letter-spacing: .12em; color: #fff;
+    transition: transform .12s, box-shadow .12s;
+  }
+  .tecla::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--amarillo); box-shadow: 0 0 5px var(--amarillo); animation: latido 2.4s ease-in-out infinite; }
+  .tecla:active, .tecla.pulsa { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 0 0 rgba(0,0,0,.45); }
+  @keyframes latido { 50% { opacity: .35; } }
+
+  /* B · Ranura de moneda */
+  .ranura {
+    right: 14px; bottom: 4px; width: 30px; height: 14px; border-radius: 7px;
+    background: color-mix(in srgb, var(--borde) 55%, #000);
+    box-shadow: inset 0 2px 3px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.3);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ranura::before { content: ""; width: 16px; height: 2.5px; border-radius: 2px; background: #000; box-shadow: 0 1px 0 rgba(255,255,255,.15); }
+  .moneda {
+    position: absolute; right: 21px; bottom: 15px; width: 16px; height: 16px; border-radius: 50%; z-index: 6; pointer-events: none;
+    background: radial-gradient(circle at 35% 30%, #fff8, transparent 50%), #f5c400;
+    box-shadow: inset 0 0 0 2px #c99a00, 0 2px 4px rgba(0,0,0,.4);
+    opacity: 0;
+  }
+  .moneda.cae { animation: cae .6s cubic-bezier(.5,0,.75,0) forwards; }
+  @keyframes cae {
+    0% { opacity: 0; transform: translateY(-40px) rotateY(0); }
+    20% { opacity: 1; }
+    80% { opacity: 1; transform: translateY(4px) rotateY(80deg) scaleX(.2); }
+    100% { opacity: 0; transform: translateY(12px) rotateY(90deg) scaleX(0); }
+  }
+
+  /* C · Pestaña para tirar */
+  .pestana {
+    left: 50%; bottom: 13px; width: 44px; height: 18px; margin-left: -22px; border-radius: 9px 9px 4px 4px;
+    background: var(--grano), color-mix(in srgb, var(--borde) 80%, #fff);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 -1px 0 rgba(0,0,0,.2), 0 -4px 10px rgba(0,0,0,.35);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    touch-action: none;
+  }
+  .pestana i { width: 16px; height: 1.5px; border-radius: 1px; background: rgba(0,0,0,.35); box-shadow: 0 .5px 0 rgba(255,255,255,.4); }
+  .objeto:has(.pestana) .leds { display: none; }
+
+  /* D · Botón lateral */
+  .lateral {
+    right: -3px; top: 150px; width: 7px; height: 52px; border-radius: 3px 2px 2px 3px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--borde) 60%, #000), color-mix(in srgb, var(--borde) 85%, #fff) 60%, color-mix(in srgb, var(--borde) 70%, #000));
+    box-shadow: 1px 0 2px rgba(0,0,0,.4);
+    transition: transform .12s;
+  }
+  .lateral::after { content: ""; position: absolute; right: 9px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--amarillo); box-shadow: 0 0 5px var(--amarillo); animation: latido 2.4s ease-in-out infinite; }
+  .lateral:active, .lateral.pulsa { transform: translateX(-2px); }
+
+  /* ── La tienda (cajón) ── */
+  .tienda {
+    position: absolute; inset: 0; z-index: 4; padding: 12px 10px; display: flex; flex-direction: column; gap: 9px;
+    background: var(--grano), rgba(14,14,16,.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transform: translateY(102%); transition: transform .55s cubic-bezier(.22,1,.36,1);
+  }
+  .tienda.desde-derecha { transform: translateX(102%); }
+  .tienda.abierta { transform: none; }
+  .tienda h3 { margin: 0; font-size: 17px; letter-spacing: -.03em; display: flex; justify-content: space-between; align-items: baseline; }
+  .tienda h3 small { font-family: "IBM Plex Mono", monospace; font-size: 7.5px; letter-spacing: .14em; opacity: .5; font-weight: 500; }
+  .pestanas { display: flex; gap: 4px; font-family: "IBM Plex Mono", monospace; font-size: 7.5px; letter-spacing: .12em; }
+  .pestanas span { padding: 4px 7px; border-radius: 5px; background: rgba(255,255,255,.06); }
+  .pestanas span:first-child { background: #fff; color: #111; }
+  .productos { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .producto {
+    border-radius: 9px; padding: 7px; background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: transform .15s;
+    opacity: 0; transform: translateY(10px);
+  }
+  .tienda.abierta .producto { animation: aparece .5s cubic-bezier(.22,1,.36,1) forwards; }
+  .tienda.abierta .producto:nth-child(2) { animation-delay: .06s; }
+  .tienda.abierta .producto:nth-child(3) { animation-delay: .12s; }
+  .tienda.abierta .producto:nth-child(4) { animation-delay: .18s; }
+  @keyframes aparece { to { opacity: 1; transform: none; } }
+  .producto:active { transform: scale(.96); }
+  .muestra { height: 46px; border-radius: 6px; background: var(--grano), linear-gradient(170deg, rgba(255,255,255,.16), transparent 40%), var(--c); box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); }
+  .producto b { font-size: 9.5px; letter-spacing: -.01em; }
+  .producto span { font-family: "IBM Plex Mono", monospace; font-size: 7px; letter-spacing: .1em; opacity: .55; display: flex; justify-content: space-between; }
+  .producto span em { font-style: normal; color: var(--amarillo); opacity: 1; }
+  .cerrar { margin-top: auto; align-self: center; font-family: "IBM Plex Mono", monospace; font-size: 7.5px; letter-spacing: .14em; opacity: .5; cursor: pointer; padding: 6px; }
+
+  /* ── Entrada de un bloque nuevo ──
+     1. Una silueta se dibuja en el sitio donde va a caer.
+     2. El bloque se materializa: llega de cerca (más grande, desenfocado, inclinado) y se posa con un muelle.
+     3. Un destello cruza el plástico nuevo.
+     4. La bandeja reacciona: los cubos vecinos se apartan un pelo y vuelven. */
+  .silueta { position: absolute; z-index: 1; pointer-events: none; overflow: visible; }
+  .silueta rect { fill: none; stroke: rgba(255,255,255,.7); stroke-width: 1.2; stroke-dasharray: 3 3; animation: traza .45s cubic-bezier(.22,1,.36,1) both, apaga .35s ease .5s forwards; }
+  @keyframes traza { from { stroke-dashoffset: 120; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
+  @keyframes apaga { to { opacity: 0; } }
+  .halo { position: absolute; z-index: 1; border-radius: 14px; pointer-events: none;
+          background: radial-gradient(closest-side, rgba(255,255,255,.28), transparent); animation: halo .9s ease-out .25s both; }
+  @keyframes halo { 0% { opacity: 0; transform: scale(.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5); } }
+  .cubo.nace { animation: nace .85s cubic-bezier(.2,1.15,.3,1) .32s both; transform-origin: 50% 60%; }
+  @keyframes nace {
+    0%   { opacity: 0; transform: translateY(-14px) scale(1.35) rotateX(28deg); filter: blur(9px); box-shadow: 0 40px 50px rgba(0,0,0,0); }
+    55%  { opacity: 1; filter: blur(0); }
+    100% { opacity: 1; transform: none; filter: none; }
+  }
+  .cubo.nace::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.55) 48%, rgba(255,255,255,.1) 55%, transparent 65%) no-repeat;
+    background-size: 250% 100%; background-position: 130% 0;
+    animation: destello .9s cubic-bezier(.4,0,.2,1) .85s both; mix-blend-mode: overlay;
+  }
+  @keyframes destello { to { background-position: -40% 0; } }
+  .cubo.aparta { animation: aparta .6s cubic-bezier(.3,1.6,.5,1) .55s; }
+  @keyframes aparta { 30% { transform: translate(var(--ax), var(--ay)); } 100% { transform: none; } }
+
+  .nota { max-width: 1100px; margin: -20px auto 50px; padding: 0 24px; font-size: 13px; opacity: .55; line-height: 1.5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Botón de la tienda</h1>
+  <p>Cuatro propuestas para el reborde. Pulsa el botón de cada una: se abre la tienda, y al elegir un bloque verás cómo entra en la bandeja.</p>
+</header>
+
+<section class="rejilla" id="rejilla"></section>
+<p class="nota">La entrada del bloque es la misma en las cuatro: una silueta marca el hueco, el bloque cae desde cerca con un poco de desenfoque y se posa, le cruza un destello y los cubos de al lado se apartan un instante. Suena un acorde de dos notas.</p>
+
+<script>
+const PROPUESTAS = [
+  { id: "A", nombre: "Tecla en la barbilla", texto: "Una tecla pequeña junto a los LEDs, con un piloto amarillo que late cuando hay novedades.", boton: '<div class="boton tecla">NEW</div>', desde: "abajo" },
+  { id: "B", nombre: "Ranura de moneda", texto: "Una ranura en la esquina. Al tocarla cae una moneda y se abre la tienda. Guiño a las máquinas de bolas.", boton: '<div class="boton ranura"></div><div class="moneda"></div>', desde: "abajo" },
+  { id: "C", nombre: "Pestaña para tirar", texto: "Una lengüeta en la barbilla que se arrastra hacia arriba y saca la tienda como un cajón. También se puede tocar.", boton: '<div class="boton pestana"><i></i><i></i></div>', desde: "abajo" },
+  { id: "D", nombre: "Botón lateral", texto: "Un botón físico que sobresale del canto derecho, como el de un aparato. La tienda entra de lado.", boton: '<div class="boton lateral"></div>', desde: "derecha" },
+];
+const PRODUCTOS = [
+  { n: "Radio", c: "#2f5bd3", t: "#fff", p: "GRATIS" },
+  { n: "Metrónomo", c: "#f5c400", p: "★ 40" },
+  { n: "Skin terrazo", c: "#e9e1d3", p: "★ 25" },
+  { n: "Hábitos", c: "#1f8a5b", t: "#fff", p: "★ 60" },
+];
+
+// Audio mínimo: un acorde suave de dos notas para la llegada del bloque
+let ctx;
+function acorde() {
+  try {
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = ctx.currentTime + .3;
+    [[659, 0, .09], [988, .09, .07], [1318, .09, .03]].forEach(([f, d, v]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = f; g.gain.setValueAtTime(.0001, t + d);
+      g.gain.exponentialRampToValueAtTime(v, t + d + .01); g.gain.exponentialRampToValueAtTime(.0001, t + d + 1.2);
+      o.connect(g).connect(ctx.destination); o.start(t + d); o.stop(t + d + 1.3);
+    });
+  } catch {}
+}
+function clic() {
+  try {
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(900, t); o.frequency.exponentialRampToValueAtTime(450, t + .05);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.15, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + .06);
+    o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + .08);
+  } catch {}
+}
+
+const U = 51;   // casilla en px dentro de la maqueta (4 columnas)
+function maqueta(pr) {
+  const fig = document.createElement("figure");
+  fig.innerHTML = `
+    <div class="letra">PROPUESTA ${pr.id}</div>
+    <div class="objeto">
+      <div class="bandeja">
+        <div class="cubo" style="--c:var(--negro);--t:#f7f5f0;left:2px;top:2px;width:${2*U-4}px;height:${2*U-4}px">RELOJ<span class="grande">14:28</span></div>
+        <div class="cubo" style="--c:var(--blanco);left:${2*U+2}px;top:2px;width:${2*U-4}px;height:${U-4}px">SÁB 24</div>
+        <div class="cubo" style="--c:var(--naranja);left:${2*U+2}px;top:${2*U+2}px;width:${2*U-4}px;height:${2*U-4}px">FOCO<span class="grande">25:00</span></div>
+        <div class="tienda ${pr.desde === "derecha" ? "desde-derecha" : ""}">
+          <h3>Tienda <small>★ 120</small></h3>
+          <div class="pestanas"><span>BLOQUES</span><span>SKINS</span></div>
+          <div class="productos">${PRODUCTOS.map(p => `
+            <div class="producto" data-c="${p.c}" data-t="${p.t || "#1c1c1b"}" data-n="${p.n}">
+              <div class="muestra" style="--c:${p.c}"></div><b>${p.n}</b><span>${p.n.startsWith("Skin") ? "SKIN" : "BLOQUE"} <em>${p.p}</em></span>
+            </div>`).join("")}
+          </div>
+          <div class="cerrar">CERRAR ✕</div>
+        </div>
+      </div>
+      <div class="leds"><i></i><i></i><i></i></div>
+      ${pr.boton}
+    </div>
+    <figcaption><b>${pr.nombre}</b><span>${pr.texto}</span></figcaption>`;
+
+  const objeto = fig.querySelector(".objeto"), bandeja = fig.querySelector(".bandeja"), tienda = fig.querySelector(".tienda");
+  const boton = fig.querySelector(".boton");
+  const abrir = () => {
+    clic();
+    boton.classList.add("pulsa"); setTimeout(() => boton.classList.remove("pulsa"), 140);
+    const moneda = fig.querySelector(".moneda");
+    if (moneda) { moneda.classList.remove("cae"); void moneda.offsetWidth; moneda.classList.add("cae"); setTimeout(() => tienda.classList.add("abierta"), 450); }
+    else tienda.classList.add("abierta");
+  };
+
+  // La pestaña también se arrastra: el cajón sigue al dedo
+  if (boton.classList.contains("pestana")) {
+    boton.addEventListener("pointerdown", e => {
+      const y0 = e.clientY, alto = bandeja.clientHeight; let movido = false;
+      tienda.style.transition = "none"; boton.setPointerCapture(e.pointerId);
+      const mover = ev => { const dy = Math.min(0, ev.clientY - y0); if (dy < -4) movido = true; tienda.style.transform = `translateY(${alto + dy}px)`; };
+      const fin = ev => {
+        boton.removeEventListener("pointermove", mover); boton.removeEventListener("pointerup", fin);
+        tienda.style.transition = ""; tienda.style.transform = "";
+        if (!movido || ev.clientY - y0 < -40) abrir();
+      };
+      boton.addEventListener("pointermove", mover); boton.addEventListener("pointerup", fin);
+    });
+  } else boton.addEventListener("click", abrir);
+
+  fig.querySelector(".cerrar").addEventListener("click", () => tienda.classList.remove("abierta"));
+  fig.querySelectorAll(".producto").forEach(p => p.addEventListener("click", () => {
+    tienda.classList.remove("abierta");
+    setTimeout(() => nuevoBloque(bandeja, p.dataset), 380);
+  }));
+  return fig;
+}
+
+// Coloca el bloque nuevo en el hueco de abajo a la izquierda y lo hace entrar
+function nuevoBloque(bandeja, d) {
+  bandeja.querySelectorAll(".cubo.nuevo, .silueta, .halo").forEach(e => e.remove());
+  const x = 2, y = 2 * U + 2, w = 2 * U - 4, h = 2 * U - 4;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "silueta");
+  Object.assign(svg.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" });
+  svg.innerHTML = `<rect x=".6" y=".6" width="${w - 1.2}" height="${h - 1.2}" rx="9"/>`;
+  const halo = document.createElement("div");
+  halo.className = "halo";
+  Object.assign(halo.style, { left: x - 20 + "px", top: y - 20 + "px", width: w + 40 + "px", height: h + 40 + "px" });
+  const cubo = document.createElement("div");
+  cubo.className = "cubo nuevo nace";
+  cubo.style.cssText = `--c:${d.c};--t:${d.t};left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
+  cubo.innerHTML = `${d.n.toUpperCase()}<span class="grande">${d.n === "Radio" ? "98.4" : d.n === "Metrónomo" ? "92" : d.n === "Hábitos" ? "3/5" : "✦"}</span>`;
+  bandeja.append(svg, halo, cubo);
+  // Los vecinos se apartan un instante, alejándose del bloque nuevo
+  bandeja.querySelectorAll(".cubo:not(.nuevo)").forEach(v => {
+    const r = v.getBoundingClientRect(), n = cubo.getBoundingClientRect();
+    const dx = (r.left + r.width / 2) - (n.left + n.width / 2), dy = (r.top + r.height / 2) - (n.top + n.height / 2), m = Math.hypot(dx, dy) || 1;
+    v.style.setProperty("--ax", (dx / m * 4).toFixed(1) + "px"); v.style.setProperty("--ay", (dy / m * 4).toFixed(1) + "px");
+    v.classList.remove("aparta"); void v.offsetWidth; v.classList.add("aparta");
+  });
+  acorde();
+}
+
+const rejilla = document.getElementById("rejilla");
+PROPUESTAS.forEach(p => rejilla.appendChild(maqueta(p)));
+</script>
+</body>
+</html>

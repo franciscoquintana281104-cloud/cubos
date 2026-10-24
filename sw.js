@@ -2,7 +2,7 @@
 // La página se pide primero a la red saltándose la caché HTTP (GitHub Pages pide
 // guardarla 10 minutos y eso dejaba los móviles con la versión vieja); si no hay red,
 // sale de la caché. El resto (iconos, tipografías) va de caché.
-const CACHE = "cubos-v7";
+const CACHE = "cubos-v8";
 const BASICOS = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png", "icono-180.png"];
 
 self.addEventListener("install", e => {

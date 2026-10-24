@@ -60,6 +60,8 @@
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; overflow: hidden; }
+  /* En el móvil, lo que haya detrás del objeto es del color del reborde: nunca un hueco blanco */
+  @media (max-width: 520px), (display-mode: standalone) { html, body { background: var(--borde, #2f5bd3); } }
   .objeto, .objeto * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .objeto input, .objeto textarea { -webkit-user-select: text; user-select: text; }
   body {
@@ -1018,6 +1020,16 @@ let tAnterior = 0;
   pasoFisica(Math.min(.034, Math.max(.001, (t - (tAnterior || t)) / 1000))); tAnterior = t;
   requestAnimationFrame(fisica);
 })();
+
+// iPhone instalado como app: con la barra de estado translúcida, el alto que da el sistema no
+// incluye esa franja y abajo quedaba un hueco blanco. Se fuerza el alto de la pantalla entera.
+function altoCompleto() {
+  const objeto = document.getElementById("objeto");
+  const instalada = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+  objeto.style.height = instalada ? Math.max(innerHeight, screen.height) + "px" : "";
+}
+altoCompleto();
+addEventListener("orientationchange", () => setTimeout(() => { altoCompleto(); medir(); }, 300));
 
 function medir() {
   // Con el teclado abierto no se recoloca nada (el iPhone cambia el alto al escribir)
