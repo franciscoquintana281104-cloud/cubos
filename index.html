@@ -60,6 +60,8 @@
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; overflow: hidden; }
+  .objeto, .objeto * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .objeto input, .objeto textarea { -webkit-user-select: text; user-select: text; }
   body {
     background: radial-gradient(90% 70% at 50% 35%, #2c2d31 0%, #161619 60%, #0e0e10 100%);
     font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -70,7 +72,7 @@
      En el móvil ocupa toda la pantalla; en el ordenador se ve como un aparato. */
   .objeto {
     position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 14px);
     background:
       var(--grano),
       linear-gradient(165deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,0) 35%, rgba(0,0,0,.14) 100%),
@@ -90,20 +92,49 @@
         0 40px 80px rgba(0,0,0,.55), 0 14px 30px rgba(0,0,0,.35);
     }
   }
-  /* Bandeja: metal perforado oscuro, teñido con el color del reborde */
+  /* Bandeja hundida. El fondo se cambia tocando un hueco vacío (ver FONDOS). */
   .bandeja {
     position: relative; padding: 4px; border-radius: 16px; color: var(--tinta); cursor: default;
-    background:
-      radial-gradient(circle, rgba(255,255,255,.075) 1px, transparent 1.6px) 0 0 / 11px 11px,
-      radial-gradient(120% 70% at 50% 0%, rgba(255,255,255,.06), transparent 60%),
-      color-mix(in srgb, var(--borde) 16%, #141414);
-    box-shadow:
-      inset 0 5px 14px rgba(0,0,0,.55),
-      inset 0 1px 2px rgba(0,0,0,.6),
-      inset 0 0 0 1px rgba(0,0,0,.35);
-    transition: background-color .4s, color .4s;
+    --base: color-mix(in srgb, var(--borde) 16%, #141414);
+    transition: color .4s;
   }
-  .tablero { position: relative; touch-action: none; border-radius: 12px; }
+  .bandeja::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1;
+    box-shadow: inset 0 5px 14px rgba(0,0,0,.55), inset 0 1px 2px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.35);
+  }
+  .bandeja, .onda { background: var(--base); }
+  [data-fondo="perforado"] { background: radial-gradient(circle, rgba(255,255,255,.075) 1px, transparent 1.6px) 0 0 / 11px 11px, radial-gradient(120% 70% at 50% 0%, rgba(255,255,255,.06), transparent 60%), var(--base); }
+  [data-fondo="liso"]      { background: radial-gradient(130% 80% at 50% 0%, rgba(255,255,255,.09), transparent 65%), var(--base); }
+  [data-fondo="rejilla"]   { background: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 100% calc(var(--u) / 2), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / calc(var(--u) / 2) 100%, var(--base); }
+  [data-fondo="carbono"]   { background: repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 3px, transparent 3px 6px), repeating-linear-gradient(-45deg, rgba(0,0,0,.25) 0 3px, transparent 3px 6px), var(--base); }
+  [data-fondo="color"]     { background: radial-gradient(120% 70% at 50% 0%, rgba(255,255,255,.18), transparent 60%), color-mix(in srgb, var(--borde) 70%, #000); }
+  [data-fondo="lino"]      { background: repeating-linear-gradient(0deg, rgba(0,0,0,.05) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 1px, transparent 1px 3px), #e3ddd0; }
+  .onda { position: absolute; inset: 0; border-radius: inherit; z-index: 0; pointer-events: none;
+          animation: onda .65s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes onda { from { clip-path: circle(0 at var(--ox) var(--oy)); } to { clip-path: circle(150% at var(--ox) var(--oy)); } }
+
+  /* Páginas: cada una es un tablero; al pasar se inclinan en 3D y los cubos se arrastran con retardo */
+  .tablero { position: relative; touch-action: none; border-radius: 12px; z-index: 2; perspective: 900px; overflow: hidden; }
+  .pagina { position: absolute; inset: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
+  .pagina .cara { transform: translate3d(calc(var(--par, 0) * (var(--col, 0) + 1) * 16px), 0, 0); }
+
+  .indicador {
+    position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 4px);
+    display: flex; justify-content: center; gap: 7px; pointer-events: none;
+  }
+  .indicador i {
+    width: 6px; height: 6px; border-radius: 50%; background: rgba(0,0,0,.35);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.4), 0 .5px 0 rgba(255,255,255,.3);
+    transition: background .3s, box-shadow .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .indicador i.on { background: #fff; transform: scale(1.15); box-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 2px #fff; }
+
+  /* Skins: se cambian manteniendo pulsado un cubo */
+  .cara[data-skin="metal"] { --letra: #1c1c1b; }
+  .bloque { perspective: 600px; }
+  .cara.volteo { animation: volteo .5s cubic-bezier(.22,1,.36,1); }
+  @keyframes volteo { 0% { transform: rotateY(-80deg) scale(.96); } 100% { transform: none; } }
+
 
   .bloque {
     position: absolute; left: 0; top: 0; padding: 4.5px;
@@ -226,18 +257,28 @@
   .nueva {
     border: 0; background: rgba(0,0,0,.06); outline: none; border-radius: 5px;
     padding: 7px 8px; margin-top: 6px; font-family: "IBM Plex Mono", monospace;
-    font-size: calc(var(--u) * .12); color: inherit; box-shadow: inset 0 1px 2px rgba(0,0,0,.15);
+    font-size: 16px; color: inherit; box-shadow: inset 0 1px 2px rgba(0,0,0,.15);
   }
   .nueva::placeholder { color: inherit; opacity: .5; }
 
   /* Notas: papel pautado */
   .notas textarea {
     flex: 1; border: 0; resize: none; outline: none; margin-top: 6px; padding: 0 2px;
-    font-family: "IBM Plex Mono", monospace; font-size: calc(var(--u) * .13); color: inherit;
-    line-height: calc(var(--u) * .22);
-    background: repeating-linear-gradient(transparent 0 calc(var(--u) * .22 - 1px), color-mix(in srgb, currentColor 16%, transparent) calc(var(--u) * .22 - 1px) calc(var(--u) * .22));
+    font-family: "IBM Plex Mono", monospace; font-size: 16px; color: inherit;
+    line-height: calc(var(--u) * .26);
+    background: repeating-linear-gradient(transparent 0 calc(var(--u) * .26 - 1px), color-mix(in srgb, currentColor 16%, transparent) calc(var(--u) * .26 - 1px) calc(var(--u) * .26));
   }
   .notas textarea::placeholder { color: inherit; opacity: .45; }
+
+  /* Calendario */
+  .titulo .mes { text-transform: uppercase; }
+  .mesrejilla {
+    flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); align-content: center; gap: 1px;
+    margin-top: 4px; font-family: "IBM Plex Mono", monospace; font-size: calc(var(--u) * .1); text-align: center;
+  }
+  .mesrejilla b { font-weight: 600; opacity: .45; padding-bottom: 2px; }
+  .mesrejilla i { font-style: normal; line-height: 1.75; border-radius: 50%; }
+  .mesrejilla i.hoy { background: var(--acento); color: #fff; font-weight: 600; }
 
   /* Frase */
   .frase { justify-content: space-between; }
@@ -292,7 +333,7 @@
   .vasos i.on { animation: encender .5s ease-out both; }
   @keyframes encender { 0% { opacity: .3; transform: scale(.7); } 60% { opacity: 1; transform: scale(1.12); } 100% { transform: none; } }
 
-  .frase p.rodar { animation: rodar .55s cubic-bezier(.22,1,.36,1); }
+  .rodar { animation: rodar .55s cubic-bezier(.22,1,.36,1); }
   @keyframes rodar { 0% { transform: translateY(40%); opacity: 0; filter: blur(3px); } 100% { transform: none; opacity: 1; } }
 
   .foco.cuerda svg { animation: cuerda .8s cubic-bezier(.22,1,.36,1); }
@@ -329,6 +370,7 @@
   <div class="bandeja" id="bandeja">
     <div class="tablero" id="tablero"></div>
   </div>
+  <div class="indicador" id="indicador"></div>
 </div>
 
 <script>
@@ -445,8 +487,8 @@ function animar(el, clase) {
 
 // Acabados: color del reborde + juego de colores de los cubos. Se cambian tocando el reborde.
 const ACABADOS = [
-  { borde: "#ff5b1a", tema: "crema" },
   { borde: "#2f5bd3", tema: "bauhaus" },
+  { borde: "#ff5b1a", tema: "crema" },
   { borde: "#f5c400", tema: "gris" },
   { borde: "#1f1f1f", tema: "noche" },
   { borde: "#1f8a5b", tema: "crema" },
@@ -465,7 +507,7 @@ ponerAcabado(leer("acabado", 0));
 const TRANSICIONES = ["reveal", "eclipse", "split", "rise"];
 let nTransicion = 0;
 document.getElementById("objeto").addEventListener("click", e => {
-  if (e.target.id !== "objeto") return;
+  if (e.target.id !== "objeto" || bloques.some(b => b.arr) || pag.arr) return;
   const siguiente = () => ponerAcabado(leer("acabado", 0) + 1);
   sonar("barrido");
   const html = document.documentElement;
@@ -751,27 +793,64 @@ const CUBOS = {
   },
 };
 
-const INICIO = {
-  reloj: [0, 0], fecha: [2, 0], agua: [2, 1], animo: [3, 1],
-  tareas: [0, 2], foco: [2, 2], notas: [0, 5], frase: [2, 6],
+// Un cubo nuevo para la tercera página: el mes, con hoy marcado. Tocar avanza de mes.
+CUBOS.calendario = {
+  w: 2, h: 2, color: "blanco",
+  montar(c) { c.innerHTML = `<div class="titulo"><span class="mes"></span><span class="num"></span></div><div class="mesrejilla"></div>`; },
+  pintar(c) {
+    const off = leer("calMes", 0), hoyD = new Date(), d = new Date(hoyD.getFullYear(), hoyD.getMonth() + off, 1);
+    const NOMBRES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    c.querySelector(".mes").textContent = NOMBRES[d.getMonth()];
+    c.querySelector(".num").textContent = d.getFullYear();
+    const huecos = (d.getDay() + 6) % 7, dias = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    let html = ["L", "M", "X", "J", "V", "S", "D"].map(l => `<b>${l}</b>`).join("") + "<i></i>".repeat(huecos);
+    for (let n = 1; n <= dias; n++) html += `<i class="${off === 0 && n === hoyD.getDate() ? "hoy" : ""}">${n}</i>`;
+    c.querySelector(".mesrejilla").innerHTML = html;
+  },
+  tocar(c) { guardar("calMes", (leer("calMes", 0) + 1) % 3); this.pintar(c); animar(c.querySelector(".mesrejilla"), "rodar"); sonar("flip"); },
 };
+
+// ── Páginas: menos cubos en cada una ────────────────────────
+const PAGINAS = [
+  { reloj: [0, 0], fecha: [2, 0], foco: [2, 2] },
+  { tareas: [0, 0], notas: [2, 0] },
+  { calendario: [0, 0], agua: [2, 0], animo: [3, 0], frase: [2, 1] },
+];
+const INICIO = Object.assign({}, ...PAGINAS);
+const PAGINA_DE = Object.fromEntries(PAGINAS.flatMap((p, i) => Object.keys(p).map(id => [id, i])));
+
+// Skins comunes a todos los cubos (mantener pulsado para cambiar)
+const SKINS = [
+  { n: "color" },
+  { n: "negro", fondo: "var(--negro)", letra: "var(--t-negro)" },
+  { n: "blanco", fondo: "var(--blanco)", letra: "var(--t-blanco)" },
+  { n: "metal", fondo: "repeating-linear-gradient(90deg, rgba(255,255,255,.22) 0 1px, rgba(0,0,0,.035) 1px 3px), linear-gradient(180deg, #e6e8eb, #b4b8be)", letra: "#1c1c1b" },
+  { n: "acento", fondo: "var(--acento)", letra: "var(--t-naranja)" },
+];
+const FONDOS = ["perforado", "liso", "rejilla", "carbono", "color", "lino"];
 
 // ── Tablero deslizante ──────────────────────────────────────
 
 const tablero = document.getElementById("tablero");
+const bandeja = document.getElementById("bandeja");
+const paginasEl = PAGINAS.map(() => { const p = document.createElement("div"); p.className = "pagina"; tablero.appendChild(p); return p; });
+const indicador = document.getElementById("indicador");
+PAGINAS.forEach(() => indicador.appendChild(document.createElement("i")));
+
 const posiciones = leer("posiciones", INICIO);
 const bloques = Object.entries(CUBOS).map(([id, cubo]) => {
   const [x, y] = posiciones[id] || INICIO[id];
-  return { id, cubo, x, y };
+  return { id, cubo, x, y, pag: PAGINA_DE[id] };
 });
 let celda = 0;
 
 // Las posiciones son continuas (en casillas, con decimales): un cubo se queda justo
 // donde lo sueltas, como una pieza de madera en su bandeja. Nada lo recoloca después.
+// Solo chocan los cubos de la misma página.
 const E = 1e-4;
 function libre(b, x, y) {
   if (x < -E || y < -E || x + b.cubo.w > COLS + E || y + b.cubo.h > FILAS + E) return false;
-  return bloques.every(o => o === b ||
+  return bloques.every(o => o === b || o.pag !== b.pag ||
     x >= o.x + o.cubo.w - E || o.x >= x + b.cubo.w - E || y >= o.y + o.cubo.h - E || o.y >= y + b.cubo.h - E);
 }
 
@@ -780,7 +859,7 @@ function pasillo(b, eje) {
   const w = b.cubo.w, h = b.cubo.h;
   let lo = 0, hi = eje === "x" ? COLS - w : FILAS - h;
   for (const o of bloques) {
-    if (o === b) continue;
+    if (o === b || o.pag !== b.pag) continue;
     if (eje === "x") {
       if (!(o.y < b.y + h - E && b.y < o.y + o.cubo.h - E)) continue;
       if (o.x + o.cubo.w <= b.x + E) lo = Math.max(lo, o.x + o.cubo.w); else hi = Math.min(hi, o.x - w);
@@ -796,15 +875,18 @@ const puedeIr = (b, eje, sg) => {
   return sg > 0 ? hi > b[eje] + .002 : sg < 0 ? lo < b[eje] - .002 : false;
 };
 
-// ── Física ──────────────────────────────────────────────────
+// ── Física de los cubos ─────────────────────────────────────
 // Los eventos solo apuntan dónde está el dedo; en cada fotograma el cubo lo persigue con un
 // suavizado corto, sin salir de su pasillo. Al soltarlo sigue con la velocidad del dedo y
 // frena por rozamiento, o se para en seco contra un tope. No hay encaje a casillas.
 const deslizando = new Set();
-const SEGUIR = 34;          // lo pegado que va al dedo (más = más directo)
-const ROCE = 5.2;           // rozamiento de la inercia (más = frena antes)
+const SEGUIR = 38;          // lo pegado que va al dedo (más = más directo)
+const ROCE = 5;             // rozamiento de la inercia (más = frena antes)
 
-function pintarPos(b) { b.el.style.transform = `translate3d(${b.x * celda}px, ${b.y * celda}px, 0)`; }
+function pintarPos(b) {
+  b.el.style.transform = `translate3d(${b.x * celda}px, ${b.y * celda}px, 0)`;
+  b.el.style.setProperty("--col", b.x.toFixed(2));
+}
 function colocar(b) { deslizando.delete(b); pintarPos(b); }
 
 // Mueve el cubo en su eje hasta "destino" (en casillas) sin atravesar nada. Devuelve si chocó.
@@ -819,9 +901,10 @@ function avanzar(b, eje, destino) {
 function seguirDedo(b, dt) {
   const a = b.arr, c = celda;
   const d = { x: a.fx - a.fx0, y: a.fy - a.fy0 };
+  if (a.largo) return;
   if (!a.eje) {
     if (Math.hypot(d.x, d.y) < 5) return;
-    a.movido = true;
+    a.movido = true; clearTimeout(a.reloj);
     // Carril hacia el que tira el dedo; si por ahí no hay hueco, el otro; si tampoco, quieto.
     const [prim, seg] = Math.abs(d.x) >= Math.abs(d.y) ? ["x", "y"] : ["y", "x"];
     if (puedeIr(b, prim, Math.sign(d[prim]))) a.eje = prim;
@@ -831,30 +914,30 @@ function seguirDedo(b, dt) {
     b.el.classList.add("arrastrando");
     sonar("coger");
   }
-  const deseo = { x: (a.g.x + d.x) / c, y: (a.g.y + d.y) / c };   // donde estaría si siguiera al dedo, en casillas
+  const deseo = { x: (a.g.x + d.x) / c, y: (a.g.y + d.y) / c };
   const eje = a.eje, otro = eje === "x" ? "y" : "x";
 
   // Cambio de carril: el dedo tira claramente hacia el otro eje y por ahí hay hueco
   const tiron = deseo[otro] - b[otro], error = Math.abs(deseo[eje] - b[eje]);
   if (Math.abs(tiron) > .3 && Math.abs(tiron) > error * 1.2 && puedeIr(b, otro, Math.sign(tiron))) {
-    a.g[eje] = b[eje] * c - d[eje];     // el eje que se deja queda donde está, sin saltos al volver
+    a.g[eje] = b[eje] * c - d[eje];
     a.eje = otro; a.v = 0; a.ultimo = undefined;
     return seguirDedo(b, dt);
   }
 
   const antes = b[eje];
   avanzar(b, eje, antes + (deseo[eje] - antes) * (1 - Math.exp(-dt * SEGUIR)));
-  // Velocidad del dedo (casillas/s) para la inercia al soltar
   if (a.ultimo !== undefined) a.v = a.v * .35 + ((deseo[eje] - a.ultimo) / dt) * .65;
   a.ultimo = deseo[eje];
   pintarPos(b);
 }
 
 function soltarCubo(b, ev) {
-  const a = b.arr; b.arr = null;
+  const a = b.arr; if (!a) return;
+  b.arr = null; clearTimeout(a.reloj);
   b.el.classList.remove("arrastrando");
+  if (a.largo) return;
   if (!a.eje) {
-    // Ni se movió: o fue un toque, o estaba bloqueado (y entonces no pasa nada)
     if (!a.movido && !a.enControl && ev.type === "pointerup") b.cubo.tocar?.(b.cara);
     return;
   }
@@ -864,6 +947,36 @@ function soltarCubo(b, ev) {
 }
 
 const guardarPosiciones = () => guardar("posiciones", Object.fromEntries(bloques.map(o => [o.id, [+o.x.toFixed(4), +o.y.toFixed(4)]])));
+
+// ── Skins ───────────────────────────────────────────────────
+function aplicarSkin(b, conAnimacion) {
+  const s = SKINS[leer("skin." + b.id, 0) % SKINS.length];
+  b.cara.dataset.skin = s.n;
+  b.cara.style.setProperty("--fondo", s.fondo || `var(--${b.cubo.color})`);
+  b.cara.style.setProperty("--letra", s.letra || `var(--t-${b.cubo.color})`);
+  if (conAnimacion) { animar(b.cara, "volteo"); sonar("flip"); try { navigator.vibrate?.(12); } catch {} }
+}
+
+// ── Páginas: un muelle mueve la posición continua del carrusel ──
+const pag = { p: leer("pagina", 0), v: 0, objetivo: leer("pagina", 0), arr: null };
+function pintarPaginas() {
+  const W = tablero.clientWidth;
+  paginasEl.forEach((el, i) => {
+    const rel = i - pag.p, a = Math.min(1, Math.abs(rel));
+    if (Math.abs(rel) > 1.15) { el.style.visibility = "hidden"; return; }
+    el.style.visibility = "visible";
+    el.style.transform = `translate3d(${rel * (W + 18)}px, 0, 0) rotateY(${-rel * 18}deg) scale(${1 - a * .1})`;
+    el.style.opacity = 1 - a * .55;
+    el.style.zIndex = 10 - Math.round(Math.abs(rel) * 5);
+    el.style.setProperty("--par", (rel * .9).toFixed(3));
+  });
+  indicador.querySelectorAll("i").forEach((d, i) => d.classList.toggle("on", i === Math.round(pag.p)));
+}
+function irAPagina(n, v = 0) {
+  n = Math.max(0, Math.min(PAGINAS.length - 1, n));
+  if (n !== pag.objetivo) { sonar("barrido"); try { navigator.vibrate?.(8); } catch {} }
+  pag.objetivo = n; pag.v = v; guardar("pagina", n);
+}
 
 function pasoFisica(dt) {
   bloques.forEach(b => b.arr && seguirDedo(b, dt));
@@ -878,6 +991,27 @@ function pasoFisica(dt) {
     }
     pintarPos(b);
   });
+  // Carrusel: o sigue al dedo, o un muelle lo lleva a su página (con un pequeño rebote)
+  if (pag.arr && !pag.arr.activo) {
+    // El carrusel solo se engancha al moverse en horizontal; si no, cuenta como toque
+    const a = pag.arr, dx = a.fx - a.fx0, dy = a.fy - a.fy0;
+    if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) { a.activo = true; a.fx0 = a.fx; a.p0 = pag.p; }
+  }
+  if (pag.arr?.activo) {
+    const W = tablero.clientWidth, dx = pag.arr.fx - pag.arr.fx0;
+    let p = pag.arr.p0 - dx / (W + 18);
+    if (p < 0) p = -Math.pow(-p, .7) * .35;                                   // tope elástico en los extremos
+    if (p > PAGINAS.length - 1) p = PAGINAS.length - 1 + Math.pow(p - PAGINAS.length + 1, .7) * .35;
+    const antes = pag.p;
+    pag.p += (p - pag.p) * (1 - Math.exp(-dt * 40));
+    pag.v = pag.v * .3 + ((pag.p - antes) / dt) * .7;
+    pintarPaginas();
+  } else if (!pag.arr && Math.abs(pag.p - pag.objetivo) > .0005 || Math.abs(pag.v) > .002) {
+    const k = 210, c = 2 * Math.sqrt(k) * .78;
+    pag.v += (-k * (pag.p - pag.objetivo) - c * pag.v) * dt;
+    pag.p += pag.v * dt;
+    pintarPaginas();
+  } else if (pag.p !== pag.objetivo) { pag.p = pag.objetivo; pag.v = 0; pintarPaginas(); }
 }
 let tAnterior = 0;
 (function fisica(t) {
@@ -886,24 +1020,28 @@ let tAnterior = 0;
 })();
 
 function medir() {
+  // Con el teclado abierto no se recoloca nada (el iPhone cambia el alto al escribir)
+  if (document.activeElement?.matches?.("input, textarea")) return;
   const objeto = document.getElementById("objeto"), est = getComputedStyle(objeto);
   const ancho = objeto.clientWidth, alto = objeto.clientHeight - parseFloat(est.paddingTop) - parseFloat(est.paddingBottom);
   if (ancho < 50 || alto < 50) return;   // aún sin tamaño (pestaña oculta): ya llegará un resize
-  const reborde = Math.max(7, ancho * .022), hueco = 8;   // grosor del plástico y relleno de la bandeja
-  // Se elige el número de filas que mejor llena el alto y se ajusta la casilla a él,
-  // para que el marco quede igual de fino por los cuatro lados
+  const reborde = Math.max(7, ancho * .022), hueco = 8;
   const anchoUtil = ancho - 2 * reborde - hueco, altoUtil = alto - 2 * reborde - hueco;
   FILAS = Math.max(8, Math.round(altoUtil / (anchoUtil / COLS)));
   celda = Math.min(anchoUtil / COLS, altoUtil / FILAS);
   Object.assign(tablero.style, { width: COLS * celda + "px", height: FILAS * celda + "px" });
   tablero.style.setProperty("--u", celda + "px");
-  // Si una posición guardada ya no cabe o se pisa, todo vuelve a su sitio
-  const valido = bloques.every(b => libre(b, b.x, b.y));
-  if (!valido) bloques.forEach(b => { [b.x, b.y] = INICIO[b.id]; });
+  bandeja.style.setProperty("--u", celda + "px");
+  // Una página con posiciones que ya no caben o se pisan vuelve a su sitio (solo esa)
+  PAGINAS.forEach((p, i) => {
+    const suyos = bloques.filter(b => b.pag === i);
+    if (!suyos.every(b => libre(b, b.x, b.y))) suyos.forEach(b => { [b.x, b.y] = INICIO[b.id]; });
+  });
   bloques.forEach(b => {
     Object.assign(b.el.style, { width: b.cubo.w * celda + "px", height: b.cubo.h * celda + "px" });
     colocar(b);
   });
+  pintarPaginas();
   requestAnimationFrame(() => tablero.classList.add("listo"));
 }
 
@@ -915,40 +1053,81 @@ bloques.forEach(b => {
   el.className = "bloque";
   const cara = document.createElement("div");
   cara.className = "cara";
-  cara.style.setProperty("--fondo", `var(--${b.cubo.color})`);
-  cara.style.setProperty("--letra", `var(--t-${b.cubo.color})`);
   el.appendChild(cara);
-  tablero.appendChild(el);
+  paginasEl[b.pag].appendChild(el);
   b.el = el; b.cara = cara;
+  aplicarSkin(b, false);
   b.cubo.montar?.(cara);
   b.cubo.pintar?.(cara);
 
   el.addEventListener("pointerdown", e => {
-    if (b.arr || e.button > 0) return;
-    // Desde un campo o un botón también se arrastra si el dedo se mueve;
-    // un toque quieto sigue siendo un toque normal en ese control.
+    if (b.arr || e.button > 0 || pag.arr || Math.abs(pag.p - pag.objetivo) > .05) return;
+    e.stopPropagation();
     const enControl = !!e.target.closest(QUIETO);
     if (!enControl) { e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch {} }
-    deslizando.delete(b); b.desliz = null;          // si iba deslizando, se coge donde está
-    b.arr = { id: e.pointerId, enControl, fx0: e.clientX, fy0: e.clientY, fx: e.clientX, fy: e.clientY,
-              g: { x: b.x * celda, y: b.y * celda }, eje: null, movido: false, v: 0, tUlt: performance.now() };
-
-    const mover = ev => {
-      if (!b.arr || ev.pointerId !== b.arr.id) return;
-      b.arr.fx = ev.clientX; b.arr.fy = ev.clientY; b.arr.tUlt = performance.now();
-    };
-    const fin = ev => {
-      if (!b.arr || ev.pointerId !== b.arr.id) return;
-      ["pointermove", "pointerup", "pointercancel", "lostpointercapture"].forEach(n => el.removeEventListener(n, n === "pointermove" ? mover : fin));
-      mover(ev);
-      soltarCubo(b, ev);
-    };
-    el.addEventListener("pointermove", mover);
-    el.addEventListener("pointerup", fin);
-    el.addEventListener("pointercancel", fin);
-    el.addEventListener("lostpointercapture", fin);
+    deslizando.delete(b); b.desliz = null;
+    const a = b.arr = { id: e.pointerId, enControl, fx0: e.clientX, fy0: e.clientY, fx: e.clientX, fy: e.clientY,
+              g: { x: b.x * celda, y: b.y * celda }, eje: null, movido: false, largo: false, v: 0, tUlt: performance.now() };
+    // Mantener pulsado sin mover: siguiente skin
+    if (!enControl) a.reloj = setTimeout(() => {
+      if (b.arr !== a || a.movido) return;
+      a.largo = true;
+      guardar("skin." + b.id, leer("skin." + b.id, 0) + 1);
+      aplicarSkin(b, true);
+    }, 430);
   });
 });
+
+// Movimiento y fin del dedo, escuchados en todo el documento: aunque el dedo salga del cubo
+// o el navegador pierda la captura, el cubo siempre se suelta (nunca se queda pillado)
+document.addEventListener("pointermove", e => {
+  for (const b of bloques) if (b.arr && b.arr.id === e.pointerId) { b.arr.fx = e.clientX; b.arr.fy = e.clientY; b.arr.tUlt = performance.now(); }
+  if (pag.arr && pag.arr.id === e.pointerId) { pag.arr.fx = e.clientX; pag.arr.fy = e.clientY; pag.arr.tUlt = performance.now(); }
+}, { passive: true });
+function finDedo(e) {
+  for (const b of bloques) if (b.arr && b.arr.id === e.pointerId) soltarCubo(b, e);
+  if (pag.arr && pag.arr.id === e.pointerId) soltarPagina(e);
+}
+["pointerup", "pointercancel"].forEach(n => document.addEventListener(n, finDedo));
+window.addEventListener("blur", () => bloques.forEach(b => b.arr && soltarCubo(b, { type: "cancel" })));
+document.addEventListener("gesturestart", e => e.preventDefault());   // sin zoom con dos dedos en iPhone
+
+// Hueco vacío de la bandeja: deslizar en horizontal pasa de página; tocar cambia el fondo
+tablero.addEventListener("pointerdown", e => {
+  if (e.button > 0 || pag.arr) return;
+  e.preventDefault();
+  try { tablero.setPointerCapture(e.pointerId); } catch {}
+  pag.arr = { id: e.pointerId, fx0: e.clientX, fy0: e.clientY, fx: e.clientX, fy: e.clientY, p0: pag.p, activo: false, tUlt: performance.now() };
+  pag.v = 0;
+});
+function soltarPagina(e) {
+  const a = pag.arr; pag.arr = null;
+  if (a.activo) {
+    // Basta un gesto rápido hacia un lado, o pasar de la mitad
+    const v = performance.now() - a.tUlt > 80 ? 0 : pag.v;
+    const n = Math.abs(v) > .9 ? (v > 0 ? Math.floor(pag.p) + 1 : Math.ceil(pag.p) - 1) : Math.round(pag.p);
+    irAPagina(n, v);
+    return;
+  }
+  const dx = a.fx - a.fx0, dy = a.fy - a.fy0;
+  if (e.type === "pointerup" && Math.hypot(dx, dy) < 8) cambiarFondo(e.clientX, e.clientY);
+}
+
+function cambiarFondo(x, y, inicial) {
+  const n = inicial ? leer("fondo", 0) : (leer("fondo", 0) + 1) % FONDOS.length;
+  guardar("fondo", n);
+  if (inicial || matchMedia("(prefers-reduced-motion: reduce)").matches) { bandeja.dataset.fondo = FONDOS[n]; return; }
+  const r = bandeja.getBoundingClientRect(), onda = document.createElement("div");
+  onda.className = "onda"; onda.dataset.fondo = FONDOS[n];
+  onda.style.setProperty("--ox", x - r.left + "px"); onda.style.setProperty("--oy", y - r.top + "px");
+  bandeja.prepend(onda);
+  sonar("barrido");
+  // Al terminar la onda se fija el fondo; el temporizador es por si la animación no llega a acabar
+  const fijar = () => { bandeja.dataset.fondo = FONDOS[n]; onda.remove(); };
+  onda.addEventListener("animationend", fijar, { once: true });
+  setTimeout(fijar, 750);
+}
+cambiarFondo(0, 0, true);
 
 function tic() {
   bloques.forEach(b => b.cubo.cadaSegundo && b.cubo.pintar(b.cara, true));
@@ -958,9 +1137,9 @@ const reloj = bloques.find(b => b.id === "reloj");
 (function fotograma() { reloj.cubo.barrer(reloj.cara); requestAnimationFrame(fotograma); })();
 tic();
 medir();
-// Entrada escalonada, de arriba abajo
-[...bloques].sort((a, b) => a.y - b.y || a.x - b.x).forEach((b, i) => {
-  b.el.style.setProperty("--retardo", 80 + i * 55 + "ms");
+// Entrada escalonada de la página visible, de arriba abajo
+[...bloques].filter(b => b.pag === Math.round(pag.p)).sort((a, b) => a.y - b.y || a.x - b.x).forEach((b, i) => {
+  b.el.style.setProperty("--retardo", 80 + i * 70 + "ms");
   b.el.classList.add("entra");
   b.cara.addEventListener("animationend", e => e.animationName === "entra" && b.el.classList.remove("entra"));
 });
