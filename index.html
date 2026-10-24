@@ -104,7 +104,7 @@
      En el móvil ocupa toda la pantalla; en el ordenador se ve como un aparato. */
   .objeto {
     position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-    padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 20px);
+    padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 38px);
     background:
       var(--grano),
       linear-gradient(165deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,0) 35%),
@@ -126,7 +126,7 @@
   }
   /* Bandeja hundida. El fondo se cambia tocando un hueco vacío (ver FONDOS). */
   .bandeja {
-    position: relative; padding: 4px; border-radius: 16px; color: var(--tinta); cursor: default;
+    position: relative; padding: 4px; border-radius: 16px; color: var(--tinta); cursor: default; overflow: hidden;
     --base: var(--bandeja-base, color-mix(in srgb, var(--borde) 16%, #141414));
     transition: color .4s;
   }
@@ -151,7 +151,7 @@
   .pagina .cara { transform: translate3d(calc(var(--par, 0) * (var(--col, 0) + 1) * 16px), 0, 0); }
 
   .indicador {
-    position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 7px);
+    position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 16px);
     display: flex; justify-content: center; gap: 7px; pointer-events: none;
   }
   .indicador i {
@@ -367,24 +367,26 @@
 
   /* ── Interruptor de la tienda: abajo a la derecha, en la barbilla ── */
   .interruptor {
-    position: absolute; right: 18px; bottom: calc(env(safe-area-inset-bottom) + 3px); z-index: 6;
-    width: 46px; height: 14px; border-radius: 7px; cursor: pointer; touch-action: none;
+    position: absolute; right: 20px; bottom: calc(env(safe-area-inset-bottom) + 8px); z-index: 6;
+    width: 66px; height: 22px; border-radius: 11px; cursor: pointer; touch-action: none;
     background: color-mix(in srgb, var(--borde) 45%, #000);
     box-shadow: inset 0 2px 3px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.3), 0 1px 0 rgba(255,255,255,.28);
   }
   .interruptor .mando {
-    position: absolute; top: 1.5px; left: 1.5px; width: 24px; height: 11px; border-radius: 5.5px;
+    position: absolute; top: 2px; left: 2px; width: 34px; height: 18px; border-radius: 9px;
     background: var(--grano), linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 60%), color-mix(in srgb, var(--borde) 75%, #fff);
     box-shadow: 0 1px 2px rgba(0,0,0,.5), inset 0 -1px 0 rgba(0,0,0,.2);
-    display: flex; align-items: center; justify-content: center; gap: 2px;
+    display: flex; align-items: center; justify-content: center; gap: 3px;
     transform: translateX(var(--mx, 0px)); transition: transform .32s cubic-bezier(.34,1.4,.64,1);
   }
-  .interruptor .mando i { width: 1.5px; height: 6px; border-radius: 1px; background: rgba(0,0,0,.28); box-shadow: .5px 0 0 rgba(255,255,255,.35); }
+  .interruptor .mando i { width: 1.5px; height: 9px; border-radius: 1px; background: rgba(0,0,0,.28); box-shadow: .5px 0 0 rgba(255,255,255,.35); }
   .interruptor::after {
-    content: ""; position: absolute; left: -9px; top: 5px; width: 4px; height: 4px; border-radius: 50%;
+    content: ""; position: absolute; left: -12px; top: 8.5px; width: 5px; height: 5px; border-radius: 50%;
     background: rgba(0,0,0,.35); box-shadow: inset 0 1px 1px rgba(0,0,0,.4); transition: background .25s, box-shadow .25s;
   }
   .interruptor.on::after { background: #ffd23f; box-shadow: 0 0 6px #ffd23f; }
+  /* Zona de toque más grande que el propio interruptor, para cogerlo sin afinar */
+  .interruptor::before { content: ""; position: absolute; inset: -14px -16px -10px -22px; }
   .interruptor.arrastra .mando { transition: none; }
 
   /* ── Tienda: un cajón que sube dentro de la bandeja ── */
@@ -393,10 +395,11 @@
     display: flex; flex-direction: column; gap: 12px; padding: 18px 14px 14px; color: #f1efe9;
     background: var(--grano), linear-gradient(180deg, rgba(20,20,22,.9), rgba(12,12,14,.96));
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    transform: translateY(104%); transition: transform .6s cubic-bezier(.22,1,.36,1);
+    transform: translateY(104%); visibility: hidden;
+    transition: transform .6s cubic-bezier(.22,1,.36,1), visibility 0s linear .6s;
     box-shadow: 0 -12px 30px rgba(0,0,0,.4);
   }
-  .tienda.abierta { transform: none; }
+  .tienda.abierta { transform: none; visibility: visible; transition: transform .6s cubic-bezier(.22,1,.36,1), visibility 0s; }
   .tienda .cabeza { display: flex; justify-content: space-between; align-items: baseline; }
   .tienda h2 { margin: 0; font-size: 30px; letter-spacing: -.045em; font-weight: 700; }
   .tienda .saldo { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 600; letter-spacing: .06em; color: #ffd23f; }
@@ -2350,19 +2353,20 @@ productos.addEventListener("click", e => {
 });
 
 // Interruptor: se desliza con el dedo (o se toca) y abre o cierra la tienda
+const RECORRIDO = 28;   // px que viaja el mando
 function ponerInterruptor(on) {
   interruptor.classList.toggle("on", on);
-  interruptor.style.setProperty("--mx", on ? "19px" : "0px");
+  interruptor.style.setProperty("--mx", on ? RECORRIDO + "px" : "0px");
 }
 interruptor.addEventListener("pointerdown", e => {
   e.stopPropagation(); e.preventDefault();
   try { interruptor.setPointerCapture(e.pointerId); } catch {}
-  const x0 = e.clientX, inicio = interruptor.classList.contains("on") ? 19 : 0;
+  const x0 = e.clientX, inicio = interruptor.classList.contains("on") ? RECORRIDO : 0;
   let movido = false;
   interruptor.classList.add("arrastra");
   const mover = ev => {
     const dx = ev.clientX - x0; if (Math.abs(dx) > 3) movido = true;
-    interruptor.style.setProperty("--mx", Math.max(0, Math.min(19, inicio + dx)) + "px");
+    interruptor.style.setProperty("--mx", Math.max(0, Math.min(RECORRIDO, inicio + dx)) + "px");
   };
   const fin = ev => {
     interruptor.removeEventListener("pointermove", mover);
@@ -2370,7 +2374,7 @@ interruptor.addEventListener("pointerdown", e => {
     interruptor.removeEventListener("pointercancel", fin);
     interruptor.classList.remove("arrastra");
     const pos = parseFloat(interruptor.style.getPropertyValue("--mx")) || 0;
-    const on = movido ? pos > 9.5 : !interruptor.classList.contains("on");
+    const on = movido ? pos > RECORRIDO / 2 : !interruptor.classList.contains("on");
     sonar("interruptor"); try { navigator.vibrate?.(10); } catch {}
     on ? abrirTienda() : cerrarTienda();
     ponerInterruptor(on);
