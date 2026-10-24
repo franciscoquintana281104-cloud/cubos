@@ -1,0 +1,17 @@
+{
+  "name": "Cubos",
+  "short_name": "Cubos",
+  "description": "Cubos de productividad que se deslizan: reloj, tareas, notas, foco y más.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e6e2d8",
+  "theme_color": "#e6e2d8",
+  "icons": [
+    { "src": "icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icono-mascara-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
