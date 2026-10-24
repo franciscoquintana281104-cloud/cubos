@@ -179,25 +179,6 @@
   button { font: inherit; color: inherit; }
 
   /* Reloj */
-  .reloj { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-  .reloj svg { width: 96%; height: 96%; overflow: visible; }
-  .reloj .lcd {
-    width: 100%; background: #c4ccab; color: #1d2318; border-radius: 6px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,.35);
-    padding: 10px 8px 8px; text-align: center;
-    font-family: "IBM Plex Mono", monospace; font-weight: 500;
-    font-size: calc(var(--u) * .5); line-height: 1; letter-spacing: -.03em;
-  }
-  .reloj .lcd small { display: block; font-size: calc(var(--u) * .1); letter-spacing: .14em; opacity: .7; margin-top: 6px; }
-  .reloj .palabras { font-size: calc(var(--u) * .33); font-weight: 600; line-height: .98; letter-spacing: -.03em; width: 100%; }
-  .reloj .palabras em { font-style: normal; color: var(--acento); }
-  .pie {
-    display: flex; justify-content: space-between; align-items: center;
-    font-family: "IBM Plex Mono", monospace; font-size: calc(var(--u) * .09); letter-spacing: .1em; opacity: .55;
-  }
-  .leds { display: flex; gap: 4px; }
-  .leds i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .3; }
-  .leds i.on { background: var(--acento); opacity: 1; box-shadow: 0 0 5px var(--acento); }
 
   /* Fecha: tarjetas abatibles */
   .fecha { flex-direction: row; align-items: center; gap: calc(var(--u) * .12); }
@@ -311,15 +292,6 @@
   }
   .frase p { padding-right: 40px; }
   /* Ranuras de ventilación bajo el reloj */
-  .pie .skin { white-space: nowrap; }
-  .pie .ranuras { display: flex; gap: 2px; }
-  .pie .ranuras i { width: 8px; height: 2px; border-radius: 1px; background: currentColor; opacity: .5; }
-
-  /* ── Mecánica ── */
-
-  .reloj { perspective: 300px; }
-  .reloj > * { transform-origin: 50% 50%; }
-  .reloj.cambio > * { animation: obturador .6s cubic-bezier(.22,1,.36,1); }
   @keyframes obturador { 0% { transform: rotateX(-70deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
   .aguja { transform-box: view-box; transform-origin: 50% 50%; }
 
@@ -491,6 +463,86 @@
   @keyframes respira { 0%, 100% { transform: scale(.55); } 50% { transform: scale(1); } }
   .respira span { font-family: "IBM Plex Mono", monospace; font-size: calc(var(--u) * .1); letter-spacing: .12em; opacity: .7; text-transform: uppercase; }
 
+
+  /* ══ Reloj: cuatro objetos distintos (mantener pulsado para cambiar) ══ */
+  .cara[data-diseno] { padding: 0; }
+  .cara[data-diseno]::before { display: none; }
+  .rl { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .rl svg { display: block; }
+  .rl .rotulo { font-family: "IBM Plex Mono", monospace; font-size: calc(var(--u) * .075); letter-spacing: .16em; text-transform: uppercase; }
+  .aguja { transform-box: view-box; transform-origin: 50% 50%; }
+
+  /* Braun: plástico negro mate, esfera hundida, segundero amarillo con contrapeso */
+  .cara[data-diseno="braun"] {
+    color: #f2f0ea;
+    background: var(--grano), radial-gradient(120% 90% at 30% 0%, #3a3a37 0%, #1b1b1a 55%, #121211 100%);
+    box-shadow: inset 0 1.5px 0 rgba(255,255,255,.14), inset 0 -2px 0 rgba(0,0,0,.5), 0 2px 0 rgba(0,0,0,.35), 0 8px 16px rgba(0,0,0,.25);
+    border-radius: 22%;
+  }
+  .rl-braun { align-items: center; justify-content: center; }
+  .rl-braun svg { width: 90%; height: 90%; }
+  .rl-braun .ventana { opacity: 0; transition: opacity .25s; }
+  .cara.con-fecha .rl-braun .ventana { opacity: 1; }
+  .cara.con-fecha .rl-braun .n3 { opacity: 0; }
+
+  /* Estación: aluminio cepillado, esfera de esmalte blanco, segundero rojo de paleta */
+  .cara[data-diseno="estacion"] {
+    color: #111;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 1px, rgba(0,0,0,.03) 1px 3px), linear-gradient(160deg, #eceef0, #b9bdc2);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8), inset 0 -2px 0 rgba(0,0,0,.18), 0 2px 0 rgba(0,0,0,.25), 0 8px 16px rgba(0,0,0,.2);
+    border-radius: 10px;
+  }
+  .rl-estacion { align-items: center; justify-content: center; }
+  .rl-estacion svg { width: 94%; height: 94%; filter: drop-shadow(0 1.5px 1.5px rgba(0,0,0,.25)); }
+  .rl-estacion .remache { position: absolute; width: 5px; height: 5px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff, #8d9197 70%); box-shadow: 0 .5px 1px rgba(0,0,0,.4); }
+  .cara.sin-segundero .rl-estacion .aguja.seg { opacity: 0; }
+  .rl-estacion .aguja.seg { transition: opacity .3s; }
+
+  /* LCD: carcasa de resina gris, pantalla de cristal líquido con segmentos y luz */
+  .cara[data-diseno="lcd"] {
+    color: #d9dbd6;
+    background: var(--grano), linear-gradient(180deg, #4a4d52 0%, #2b2d31 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -2px 0 rgba(0,0,0,.45), 0 2px 0 rgba(0,0,0,.35), 0 8px 16px rgba(0,0,0,.25);
+    border-radius: 16px;
+  }
+  .rl-lcd { padding: 9% 8% 7%; gap: 6%; }
+  .rl-lcd .fila { display: flex; justify-content: space-between; align-items: center; }
+  .rl-lcd .boton {
+    width: calc(var(--u) * .2); height: calc(var(--u) * .09); border-radius: 3px;
+    background: linear-gradient(180deg, #8b8f95, #5a5e63); box-shadow: 0 1.5px 0 #1d1e20, inset 0 1px 0 rgba(255,255,255,.4);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .cara.luz .rl-lcd .boton.izq { transform: translateY(1.5px); box-shadow: 0 0 0 #1d1e20, inset 0 1px 0 rgba(255,255,255,.3); }
+  .rl-lcd .marco { flex: 1; border-radius: 7px; padding: 5%; background: #16171a; box-shadow: inset 0 2px 4px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.12); }
+  .rl-lcd .panel {
+    height: 100%; border-radius: 3px; display: flex; flex-direction: column; justify-content: center; gap: 6%; padding: 4% 6%;
+    background: linear-gradient(180deg, #c3cbb0, #aab496); color: #1a1f15;
+    box-shadow: inset 0 3px 5px rgba(0,0,0,.35);
+    transition: background .18s, box-shadow .18s;
+  }
+  .cara.luz .rl-lcd .panel { background: linear-gradient(180deg, #8fe6d6, #5fc9b8); box-shadow: inset 0 3px 5px rgba(0,0,0,.2), 0 0 14px rgba(110,230,210,.55); }
+  .rl-lcd .panel .grande { width: 100%; height: auto; }
+  .rl-lcd .panel .peq { display: flex; justify-content: space-between; align-items: center; font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: calc(var(--u) * .1); letter-spacing: .08em; }
+  .rl-lcd .panel .peq svg { height: calc(var(--u) * .17); width: auto; }
+  .rl-lcd .seg { fill: currentColor; }
+  .rl-lcd .seg.off { opacity: .07; }
+  .rl-lcd .puntos { transition: opacity .1s; }
+
+  /* Palabras: plástico naranja inyectado y tipografía enorme, como un cartel */
+  .cara[data-diseno="palabras"] {
+    color: #161514;
+    background: var(--grano), linear-gradient(170deg, rgba(255,255,255,.22), rgba(255,255,255,0) 45%), #ff5b1a;
+    box-shadow: inset 0 1.5px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.15), 0 2px 0 rgba(0,0,0,.25), 0 8px 16px rgba(0,0,0,.2);
+    border-radius: 6px;
+  }
+  .rl-palabras { padding: 10% 10% 8%; justify-content: space-between; }
+  .rl-palabras .texto { font-size: calc(var(--u) * .3); font-weight: 700; line-height: .95; letter-spacing: -.045em; }
+  .rl-palabras .texto em { font-style: normal; color: #fff; }
+  .rl-palabras .texto.exacta { font-size: calc(var(--u) * .25); }
+  .rl-palabras .rotulo { display: flex; justify-content: space-between; opacity: .6; }
+  .rl-palabras .texto.cambia { animation: rodar .45s cubic-bezier(.22,1,.36,1); }
+
   @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 
 </style>
@@ -601,6 +653,8 @@ const SONIDOS = {
     soplo(t, .4, 700, .04);
     [[659, .3, .085], [988, .39, .065], [1318, .39, .025], [1976, .5, .015]].forEach(([f, d, v]) => tok(t + d, f, f * .999, 1.3, v, 1.6));
   },
+  pip(t) { tok(t, 2900, 2900, .09, .035, 0, "square"); },
+  estacion(t) { tok(t, 190, 120, .14, .2, .6); soplo(t, .05, 700, .06); tok(t + .02, 1200, 900, .05, .04, .4); },
   interruptor(t) { tok(t, 380, 210, .06, .16, .3); soplo(t, .03, 1500, .05); tok(t + .03, 1400, 900, .03, .05, .2); },
   compra(t) { tok(t, 1568, 1566, .5, .06, 1); tok(t + .08, 2093, 2090, .7, .05, 1.2); },
   barrido(t) { soplo(t, .32, 900, .05); tok(t, 260, 520, .3, .045, .8); tok(t + .05, 900, 1300, .12, .03, .8); },
@@ -685,9 +739,31 @@ function semana(d) {
 
 // ── Los cubos ───────────────────────────────────────────────
 
-const RELOJ_SKINS = ["analógico", "lcd", "palabras", "anillos"];
+const RELOJ_DISENOS = ["braun", "estacion", "lcd", "palabras"];
 const HORAS = ["doce", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once"];
 const MINS = { 5: "cinco", 10: "diez", 15: "cuarto", 20: "veinte", 25: "veinticinco", 30: "media" };
+
+const NUMS = ["", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce", "trece", "catorce", "quince",
+  "dieciséis", "diecisiete", "dieciocho", "diecinueve", "veinte", "veintiuno", "veintidós", "veintitrés", "veinticuatro", "veinticinco", "veintiséis",
+  "veintisiete", "veintiocho", "veintinueve"];
+const DECENAS = { 3: "treinta", 4: "cuarenta", 5: "cincuenta" };
+const numEnPalabras = n => n < 30 ? NUMS[n] : DECENAS[Math.floor(n / 10)] + (n % 10 ? " y " + NUMS[n % 10] : "");
+function horaExacta(d) {
+  const h = d.getHours() % 12, m = d.getMinutes();
+  return (h === 1 ? "es la <em>una</em>" : "son las <em>" + HORAS[h] + "</em>") + "<br>" + (m ? "y " + numEnPalabras(m) : "en punto");
+}
+
+// Siete segmentos dibujados a mano (dígito de 10×18), con los apagados visibles como en un LCD real
+const SEGS = {
+  a: "1,1 9,1 8,3 2,3", b: "9.2,1.6 9.2,8.4 8,8 8,3", c: "9.2,9.6 9.2,16.4 8,15 8,10", d: "2,15 8,15 9,17 1,17",
+  e: ".8,9.6 2,10 2,15 .8,16.4", f: ".8,1.6 2,3 2,8 .8,8.4", g: "1.2,9 2.2,8 7.8,8 8.8,9 7.8,10 2.2,10",
+};
+const DIGITOS = ["abcdef", "bc", "abged", "abgcd", "fgbc", "afgcd", "afgedc", "abc", "abcdefg", "abcdfg"];
+const digito = (n, x, y = 0, k = 1) =>
+  `<g transform="translate(${x} ${y}) scale(${k}) skewX(-6)">${Object.entries(SEGS).map(([l, p]) =>
+    `<polygon class="seg ${DIGITOS[n].includes(l) ? "" : "off"}" points="${p}"/>`).join("")}</g>`;
+
+const easeAtras = (x, k = 1.9) => 1 + (k + 1) * Math.pow(x - 1, 3) + k * Math.pow(x - 1, 2);
 
 function horaEnPalabras(d) {
   let h = d.getHours() % 12, m = Math.round(d.getMinutes() / 5) * 5;
@@ -725,67 +801,129 @@ const TAREAS_INICIO = [
 
 const CUBOS = {
   reloj: {
-    w: 2, h: 2, color: "negro",
+    w: 2, h: 2, color: "negro", disenos: RELOJ_DISENOS,
+    diseno() { return RELOJ_DISENOS[leer("diseno.reloj", 0) % RELOJ_DISENOS.length]; },
+
     montar(c) {
-      c.innerHTML = `<div class="reloj"></div><div class="pie"><span class="skin"></span>
-        <span class="ranuras"><i></i><i></i><i></i></span><span class="leds">${RELOJ_SKINS.map(() => "<i></i>").join("")}</span></div>`;
-    },
-    esqueleto(nombre) {
-      if (nombre === "analógico") {
-        const marcas = [...Array(60)].map((_, i) => i % 5
-          ? `<line x1="50" y1="5" x2="50" y2="7" stroke="currentColor" stroke-width=".6" opacity=".45" transform="rotate(${i * 6} 50 50)"/>`
-          : `<line x1="50" y1="5" x2="50" y2="${i % 15 ? 10 : 12}" stroke="currentColor" stroke-width="${i % 15 ? 1.4 : 2.4}" transform="rotate(${i * 6} 50 50)"/>`).join("");
-        const nums = [[12, 50, 22], [3, 79, 52], [6, 50, 82], [9, 21, 52]].map(([n, x, y]) =>
-          `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="8" font-weight="500" fill="currentColor" font-family="Inter Tight">${n}</text>`).join("");
-        return `<svg viewBox="0 0 100 100">${marcas}${nums}
-          <g class="aguja hor"><line x1="50" y1="56" x2="50" y2="29" stroke="currentColor" stroke-width="3.6"/></g>
-          <g class="aguja min"><line x1="50" y1="56" x2="50" y2="14" stroke="currentColor" stroke-width="2.4"/></g>
-          <g class="aguja seg"><line x1="50" y1="62" x2="50" y2="12" stroke="var(--segundero)" stroke-width="1"/>
-            <circle cx="50" cy="62" r="2" fill="var(--segundero)"/></g>
-          <circle cx="50" cy="50" r="2.6" fill="var(--segundero)"/><circle cx="50" cy="50" r=".9" fill="rgba(0,0,0,.4)"/></svg>`;
-      }
-      if (nombre === "lcd") return `<div class="lcd"><span class="dig"><span class="fantasma">88:88</span><span class="hm"></span></span><small></small></div>`;
-      if (nombre === "palabras") return `<div class="palabras"></div>`;
-      return `<svg viewBox="0 0 100 100"></svg>`;
-    },
-    pintar(c) {
-      const skin = leer("reloj", 0), nombre = RELOJ_SKINS[skin], d = new Date();
-      const h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
-      const caja = c.querySelector(".reloj");
-      if (caja.dataset.skin !== nombre) {
-        caja.dataset.skin = nombre;
-        caja.innerHTML = this.esqueleto(nombre);
-        c.querySelector(".skin").textContent = nombre;
-        c.querySelectorAll(".leds i").forEach((p, i) => p.classList.toggle("on", i === skin));
-      }
-      if (nombre === "analógico") {
-        this.barrer(c);
-      } else if (nombre === "lcd") {
-        caja.querySelector(".hm").textContent = `${dos(h)}:${dos(m)}`;
-        caja.querySelector("small").textContent = `${dos(s)} SEG · 24H`;
-      } else if (nombre === "palabras") {
-        caja.querySelector(".palabras").innerHTML = horaEnPalabras(d);
-      } else {
-        caja.querySelector("svg").innerHTML = `
-          ${arco(44, (h % 12 + m / 60) / 12, 8, "var(--acento)")}
-          ${arco(33, (m + s / 60) / 60, 8, "var(--segundero)")}
-          ${arco(22, s / 60, 8, "var(--azul)")}`;
-      }
-    },
-    // Agujas de barrido continuo: se recalculan en cada fotograma
-    barrer(c) {
-      const agujas = c.querySelectorAll(".aguja");
-      if (!agujas.length) return;
-      const d = new Date(), s = d.getSeconds() + d.getMilliseconds() / 1000;
-      const m = d.getMinutes() + s / 60, h = d.getHours() % 12 + m / 60;
-      const ang = { hor: h * 30, min: m * 6, seg: s * 6 };
-      agujas.forEach(a => a.style.transform = `rotate(${ang[a.classList[1]]}deg)`);
-    },
-    tocar(c) {
-      guardar("reloj", (leer("reloj", 0) + 1) % RELOJ_SKINS.length);
+      const d = this.diseno();
+      c.dataset.diseno = d;
+      c.classList.toggle("con-fecha", !!leer("reloj.fecha", false));
+      c.classList.toggle("sin-segundero", !!leer("reloj.sinSeg", false));
+      c.innerHTML = this.plantilla[d]();
       this.pintar(c);
-      animar(c.querySelector(".reloj"), "cambio");
-      sonar("clic");
+    },
+
+    plantilla: {
+      braun() {
+        const marcas = [...Array(60)].map((_, i) => i % 5
+          ? `<line x1="50" y1="6.5" x2="50" y2="8.5" stroke="currentColor" stroke-width=".5" opacity=".55" transform="rotate(${i * 6} 50 50)"/>`
+          : `<line x1="50" y1="6" x2="50" y2="10.5" stroke="currentColor" stroke-width="1.6" transform="rotate(${i * 6} 50 50)"/>`).join("");
+        const nums = [...Array(12)].map((_, i) => {
+          const n = i || 12, a = i * 30 * Math.PI / 180;
+          return `<text class="n${n}" x="${(50 + 32 * Math.sin(a)).toFixed(2)}" y="${(50 - 32 * Math.cos(a)).toFixed(2)}" text-anchor="middle" dominant-baseline="central" font-size="7.2" font-weight="500" fill="currentColor" font-family="Inter Tight">${n}</text>`;
+        }).join("");
+        return `<div class="rl rl-braun"><svg viewBox="0 0 100 100">
+          <defs><radialGradient id="esfB" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#232322"/><stop offset="1" stop-color="#121211"/></radialGradient></defs>
+          <circle cx="50" cy="50" r="47" fill="url(#esfB)" stroke="#000" stroke-opacity=".6" stroke-width="1"/>
+          <circle cx="50" cy="50" r="47.6" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width=".6"/>
+          ${marcas}${nums}
+          <g class="ventana"><rect x="73" y="45.5" width="13" height="9" rx="1.6" fill="#f2f0ea"/><text class="dia" x="79.5" y="50.2" text-anchor="middle" dominant-baseline="central" font-size="6.2" font-weight="600" fill="#111" font-family="Inter Tight"></text></g>
+          <g class="aguja hor"><polygon points="48.3,55 51.7,55 50.9,25 49.1,25" fill="currentColor"/></g>
+          <g class="aguja min"><polygon points="48.9,56 51.1,56 50.5,11 49.5,11" fill="currentColor"/></g>
+          <g class="aguja seg"><line x1="50" y1="63" x2="50" y2="9" stroke="#f5c400" stroke-width=".9" stroke-linecap="round"/><circle cx="50" cy="61" r="2.6" fill="#f5c400"/></g>
+          <circle cx="50" cy="50" r="2.4" fill="#f5c400"/><circle cx="50" cy="50" r=".8" fill="#111"/>
+        </svg></div>`;
+      },
+      estacion() {
+        const marcas = [...Array(60)].map((_, i) => i % 5
+          ? `<rect x="49.5" y="7" width="1" height="3.6" fill="#111" transform="rotate(${i * 6} 50 50)"/>`
+          : `<rect x="48.4" y="7" width="3.2" height="10.5" fill="#111" transform="rotate(${i * 6} 50 50)"/>`).join("");
+        return `<div class="rl rl-estacion">
+          <span class="remache" style="left:6px;top:6px"></span><span class="remache" style="right:6px;top:6px"></span>
+          <span class="remache" style="left:6px;bottom:6px"></span><span class="remache" style="right:6px;bottom:6px"></span>
+          <svg viewBox="0 0 100 100">
+            <defs><linearGradient id="bisE" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfdfd"/><stop offset="1" stop-color="#8f949a"/></linearGradient></defs>
+            <circle cx="50" cy="50" r="48.5" fill="url(#bisE)"/>
+            <circle cx="50" cy="50" r="45.5" fill="#f6f4ee"/>
+            ${marcas}
+            <g class="aguja hor"><polygon points="47.6,62 52.4,62 51.6,22 48.4,22" fill="#111"/></g>
+            <g class="aguja min"><polygon points="48.3,64 51.7,64 51,9 49,9" fill="#111"/></g>
+            <g class="aguja seg"><line x1="50" y1="66" x2="50" y2="22" stroke="#c8102e" stroke-width="1.1"/><circle cx="50" cy="20" r="4.4" fill="#c8102e"/></g>
+            <circle cx="50" cy="50" r="1.6" fill="#c8102e"/>
+          </svg></div>`;
+      },
+      lcd() {
+        return `<div class="rl rl-lcd">
+          <div class="fila"><span class="boton izq"></span><span class="rotulo">light · cubos · mode</span><span class="boton"></span></div>
+          <div class="marco"><div class="panel"><svg class="grande" viewBox="-1 -1 66 20"></svg><div class="peq"><span class="dia"></span><svg viewBox="-1 -1 22 20"></svg></div></div></div>
+          <div class="fila"><span class="rotulo">digital quartz</span><span class="rotulo">24h</span></div>
+        </div>`;
+      },
+      palabras() {
+        return `<div class="rl rl-palabras"><div class="texto"></div><div class="rotulo"><span>cubos</span><span class="modo"></span></div></div>`;
+      },
+    },
+
+    pintar(c) {
+      const d = new Date(), dis = c.dataset.diseno;
+      if (dis === "braun") c.querySelector(".ventana .dia").textContent = d.getDate();
+      else if (dis === "lcd") {
+        const h = dos(d.getHours()), m = dos(d.getMinutes()), sg = dos(d.getSeconds());
+        c.querySelector(".grande").innerHTML = digito(+h[0], 0) + digito(+h[1], 13) +
+          `<g class="puntos"><rect x="27.5" y="4.5" width="2.2" height="2.2"/><rect x="26.8" y="11.5" width="2.2" height="2.2"/></g>` +
+          digito(+m[0], 34) + digito(+m[1], 47);
+        c.querySelector(".peq svg").innerHTML = digito(+sg[0], 0) + digito(+sg[1], 11);
+        c.querySelector(".dia").textContent = DIAS[d.getDay()].toUpperCase() + " " + d.getDate();
+      } else if (dis === "palabras") {
+        const exacta = !!leer("reloj.exacta", false), t = c.querySelector(".texto");
+        const html = exacta ? horaExacta(d) : horaEnPalabras(d);
+        if (t.innerHTML !== html) { t.innerHTML = html; t.classList.toggle("exacta", exacta); }
+        c.querySelector(".modo").textContent = exacta ? "exacta" : "redondeada";
+      }
+      this.barrer(c);
+    },
+
+    // Cada fotograma: el mecanismo propio de cada diseño
+    barrer(c) {
+      const dis = c.dataset.diseno, d = new Date();
+      const h = d.getHours() % 12, m = d.getMinutes(), s = d.getSeconds(), ms = d.getMilliseconds();
+      const poner = (k, a) => { const e = c.querySelector(".aguja." + k); if (e) e.style.transform = `rotate(${a}deg)`; };
+      if (dis === "braun") {
+        // Cuarzo: el segundero salta cada segundo con un golpe seco y un mínimo rebote
+        const t = Math.min(1, ms / 150);
+        poner("seg", (s - 1 + easeAtras(t)) * 6);
+        poner("min", (m + s / 60) * 6);
+        poner("hor", (h + m / 60) * 30);
+      } else if (dis === "estacion") {
+        // Reloj de estación: el segundero da la vuelta en 58,5 s, espera arriba y suelta el minutero
+        const seg = s + ms / 1000;
+        poner("seg", Math.min(seg / 58.5, 1) * 360);
+        const desde = s * 1000 + ms, salto = desde < 320 ? easeAtras(desde / 320, 2.4) : 1;
+        poner("min", (m - 1 + salto) * 6);
+        poner("hor", (h + m / 60) * 30);
+      } else if (dis === "lcd") {
+        const p = c.querySelector(".puntos"); if (p) p.style.opacity = ms < 500 ? 1 : .07;
+      }
+    },
+
+    // Tocar hace algo propio de cada aparato
+    tocar(c) {
+      const dis = c.dataset.diseno;
+      if (dis === "braun") {
+        guardar("reloj.fecha", !leer("reloj.fecha", false));
+        c.classList.toggle("con-fecha", leer("reloj.fecha", false));
+        sonar("clic");
+      } else if (dis === "estacion") {
+        guardar("reloj.sinSeg", !leer("reloj.sinSeg", false));
+        c.classList.toggle("sin-segundero", leer("reloj.sinSeg", false));
+        sonar("estacion");
+      } else if (dis === "lcd") {
+        c.classList.add("luz"); sonar("pip");
+        clearTimeout(this.luzT); this.luzT = setTimeout(() => c.classList.remove("luz"), 3000);
+      } else {
+        guardar("reloj.exacta", !leer("reloj.exacta", false));
+        this.pintar(c); animar(c.querySelector(".texto"), "cambia"); sonar("tecla");
+      }
     },
     cadaSegundo: true,
   },
@@ -1157,12 +1295,17 @@ const guardarPosiciones = () => guardar("posiciones", Object.fromEntries(bloques
 // ── Skins ───────────────────────────────────────────────────
 // Siguiente skin que sea tuya (las de la tienda hay que conseguirlas antes)
 function siguienteSkin(b) {
+  if (b.cubo.disenos) { guardar("diseno." + b.id, (leer("diseno." + b.id, 0) + 1) % b.cubo.disenos.length); return; }
   const propias = leer("skinsPropias", SKINS_DE_SERIE);
   let i = leer("skin." + b.id, 0);
   do { i = (i + 1) % SKINS.length; } while (!propias.includes(SKINS[i].n));
   guardar("skin." + b.id, i);
 }
 function aplicarSkin(b, conAnimacion) {
+  if (b.cubo.disenos) {
+    if (conAnimacion) { b.cubo.montar(b.cara); animar(b.cara, "volteo"); sonar("flip"); try { navigator.vibrate?.(12); } catch {} }
+    return;
+  }
   const s = SKINS[leer("skin." + b.id, 0) % SKINS.length];
   b.cara.dataset.skin = s.n;
   b.cara.style.setProperty("--fondo", s.fondo || `var(--${b.cubo.color})`);

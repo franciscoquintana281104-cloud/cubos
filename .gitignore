@@ -1,1 +1,5 @@
 .DS_Store
+# Documentos internos: se quedan en el Mac, no se publican
+DIRECCION.md
+CLAUDE.md
+maquetas/
