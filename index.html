@@ -59,61 +59,57 @@
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; height: 100%; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
   body {
     background: radial-gradient(90% 70% at 50% 35%, #2c2d31 0%, #161619 60%, #0e0e10 100%);
     font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    display: flex; align-items: center; justify-content: center;
+    overscroll-behavior: none; touch-action: manipulation; -webkit-touch-callout: none;
   }
-  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
-  .movil {
-    width: min(390px, calc(100vw - 24px), calc((100vh - 40px) * .44));
-    background: #0b0b0d; border-radius: 52px; padding: 9px; position: relative;
+
+  /* El objeto: un reborde de plástico de color con una bandeja hundida dentro.
+     En el móvil ocupa toda la pantalla; en el ordenador se ve como un aparato. */
+  .objeto {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    background:
+      var(--grano),
+      linear-gradient(165deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,0) 35%, rgba(0,0,0,.14) 100%),
+      var(--borde);
+    transition: background-color .5s;
+    cursor: pointer;
+  }
+  @media (min-width: 521px) and (not (display-mode: standalone)) {
+    .objeto {
+      inset: auto; position: relative; margin: 3vh auto 0;
+      height: 94vh; aspect-ratio: 9 / 19; border-radius: 9% / 4.3%;
+      box-shadow:
+        inset 0 2px 1px rgba(255,255,255,.4),
+        inset 0 -4px 3px rgba(0,0,0,.2),
+        inset 0 0 0 1px rgba(0,0,0,.15),
+        0 2px 0 rgba(0,0,0,.3),
+        0 40px 80px rgba(0,0,0,.55), 0 14px 30px rgba(0,0,0,.35);
+    }
+  }
+  .bandeja {
+    position: relative; padding: 4px; border-radius: 18px; color: var(--tinta); cursor: default;
+    background: var(--grano), var(--carcasa);
     box-shadow:
-      0 0 0 1.5px #3a3b40, 0 0 0 3px #1a1a1d, 0 0 0 4px #4a4b50,
-      0 40px 90px rgba(0,0,0,.55), 0 12px 30px rgba(0,0,0,.35);
+      inset 0 4px 10px rgba(0,0,0,.35),
+      inset 0 1px 2px rgba(0,0,0,.4),
+      inset 0 0 0 1px rgba(0,0,0,.18),
+      0 1.5px 0 rgba(255,255,255,.35),
+      0 -1px 0 rgba(0,0,0,.18);
+    transition: background-color .4s, color .4s;
   }
-  .pantalla {
-    background: var(--carcasa); color: var(--tinta);
-    border-radius: 44px; padding: 10px 14px 10px; position: relative; overflow: hidden;
-    transition: background .4s, color .4s;
+  /* Carriles: una ranura por cada fila y cada columna */
+  .tablero {
+    position: relative; touch-action: none;
+    background:
+      linear-gradient(to bottom, transparent calc(50% - 1.5px), var(--ranura, rgba(0,0,0,.16)) calc(50% - 1.5px) calc(50% + .5px), var(--brillo-ranura, rgba(255,255,255,.3)) calc(50% + .5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)) 0 0 / 100% var(--u),
+      linear-gradient(to right, transparent calc(50% - 1.5px), var(--ranura, rgba(0,0,0,.16)) calc(50% - 1.5px) calc(50% + .5px), var(--brillo-ranura, rgba(255,255,255,.3)) calc(50% + .5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)) 0 0 / var(--u) 100%;
+    border-radius: 14px;
   }
-  .estado {
-    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
-    height: 34px; padding: 0 14px; font-size: 14px; font-weight: 600; letter-spacing: -.01em;
-  }
-  .estado .isla { width: 96px; height: 28px; border-radius: 20px; background: #000; }
-  .estado .iconos { justify-self: end; display: flex; gap: 5px; align-items: center; }
-  .estado svg { display: block; fill: currentColor; }
-
-  .cabecera {
-    display: flex; justify-content: space-between; align-items: flex-end;
-    padding: 14px 8px 14px;
-  }
-  .marca { font-weight: 700; letter-spacing: -.045em; font-size: 30px; line-height: .9; }
-  .marca sup { font-size: 9px; font-weight: 500; letter-spacing: 0; vertical-align: top; margin-left: 2px; opacity: .5; }
-  .subtitulo {
-    display: block; margin-top: 6px; font-family: "IBM Plex Mono", monospace; font-weight: 500;
-    font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; opacity: .55; white-space: nowrap;
-  }
-  .mandos {
-    display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 8px;
-    background: rgba(0,0,0,.06); box-shadow: inset 0 1px 2px rgba(0,0,0,.12), 0 1px 0 rgba(255,255,255,.35);
-  }
-  .temas { display: flex; gap: 4px; }
-  .temas button {
-    width: 18px; height: 12px; border-radius: 3px; border: 0; padding: 0; cursor: pointer;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.2), 0 1px 0 rgba(0,0,0,.25);
-    transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s;
-  }
-  .temas button.activo { transform: translateY(1px); box-shadow: inset 0 0 0 1.5px var(--tinta); }
-
-  .tablero { position: relative; aspect-ratio: 4 / 8; touch-action: none; }
-  .hueco {
-    position: absolute; display: flex; align-items: center; justify-content: center;
-    font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--marca);
-  }
-  .hueco::after { content: "+"; }
+  [data-tema="noche"] { --ranura: rgba(0,0,0,.55); --brillo-ranura: rgba(255,255,255,.07); }
 
   .bloque {
     position: absolute; left: 0; top: 0; padding: 4.5px;
@@ -259,7 +255,7 @@
   :root {
     --grano: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   }
-  .pantalla { background: var(--grano), radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,.18), transparent 70%), var(--carcasa); }
+
   .cara {
     background:
       var(--grano),
@@ -314,80 +310,32 @@
   .foco.suena { animation: suena .5s ease-in-out 3; }
   @keyframes suena { 25% { transform: rotate(-1.5deg); } 75% { transform: rotate(1.5deg); } }
 
-  .snd {
-    display: flex; align-items: center; gap: 4px; border: 0; cursor: pointer; padding: 2px 5px; border-radius: 3px;
-    font-family: "IBM Plex Mono", monospace; font-size: 9px; font-weight: 600; letter-spacing: .06em;
-    background: rgba(0,0,0,.07); box-shadow: 0 1px 0 rgba(0,0,0,.2);
-  }
-  .snd i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .25; }
-  .snd.on i { background: var(--acento); opacity: 1; box-shadow: 0 0 4px var(--acento); }
 
 
   /* Entrada: los cubos se ensamblan uno tras otro al abrir */
   .bloque.entra .cara { animation: entra .8s cubic-bezier(.22,1,.36,1) both; animation-delay: var(--retardo); }
   @keyframes entra { 0% { opacity: 0; transform: translateY(22px) scale(.92); } 100% { opacity: 1; transform: none; } }
-  .tablero:not(.listo) .hueco { opacity: 0; }
-  .hueco { transition: opacity 1.2s ease .5s; }
 
   @media (hover: hover) {
     .bloque:not(.arrastrando):not(.pulsado):hover .cara { transform: translateY(-1.5px); }
   }
   .bloque.pulsado .cara { transform: translateY(1.5px) scale(.985); }
 
-  .inicio { width: 120px; height: 4.5px; border-radius: 3px; background: var(--tinta); opacity: .85; margin: 10px auto 2px; }
 
-  /* ── En un móvil de verdad: sin maqueta, a pantalla completa ── */
-  @media (max-width: 520px), (display-mode: standalone) {
-    html, body { background: var(--fondo-app, #e6e2d8); overscroll-behavior: none; }
-    body { display: block; touch-action: manipulation; -webkit-touch-callout: none; }
-    .movil { width: 100%; padding: 0; background: none; box-shadow: none; border-radius: 0; }
-    .pantalla {
-      border-radius: 0; min-height: 100dvh; display: flex; flex-direction: column;
-      padding: calc(env(safe-area-inset-top) + 2px) 12px calc(env(safe-area-inset-bottom) + 8px);
-    }
-    .estado, .inicio { display: none; }
-    .cabecera { padding: 10px 6px 12px; }
-    .tablero {
-      width: min(100%, calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 118px) / 2));
-      margin: 0 auto;
-    }
-    .pista { margin-top: auto; padding-top: 6px; }
-  }
   @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 
-  .pista { text-align: center; font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; opacity: .38; margin: 8px 0 0; }
 </style>
 </head>
 <body>
-<div class="movil">
-  <div class="pantalla" id="pantalla">
-    <div class="estado">
-      <span id="hora"></span>
-      <span class="isla"></span>
-      <span class="iconos">
-        <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx=".8"/><rect x="4.5" y="5" width="3" height="6" rx=".8"/><rect x="9" y="2.5" width="3" height="8.5" rx=".8"/><rect x="13.5" y="0" width="3" height="11" rx=".8"/></svg>
-        <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2.2c2.2 0 4.2.8 5.7 2.2l1.1-1.2A10 10 0 0 0 7.5.5 10 10 0 0 0 .7 3.2l1.1 1.2a8.3 8.3 0 0 1 5.7-2.2Zm0 3.3c1.3 0 2.5.5 3.4 1.3l1.1-1.2A6.6 6.6 0 0 0 7.5 3.8 6.6 6.6 0 0 0 3 5.6l1.1 1.2c.9-.8 2.1-1.3 3.4-1.3Zm0 3.3c.4 0 .8.2 1.1.4L7.5 10.6 6.4 9.2c.3-.2.7-.4 1.1-.4Z"/></svg>
-        <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="16" height="8" rx="2"/><rect x="23.6" y="4" width="1.6" height="4" rx=".8" opacity=".4"/></svg>
-      </span>
-    </div>
-    <div class="cabecera">
-      <div>
-        <span class="marca">cubos<sup>®</sup></span>
-        <span class="subtitulo" id="subtitulo"></span>
-      </div>
-      <div class="mandos">
-        <button class="snd" id="snd" aria-label="sonido">SND<i></i></button>
-        <div class="temas" id="temas"></div>
-      </div>
-    </div>
+<div class="objeto" id="objeto">
+  <div class="bandeja" id="bandeja">
     <div class="tablero" id="tablero"></div>
-    <p class="pista">Pulsa para usar · arrastra para mover</p>
-    <div class="inicio"></div>
   </div>
 </div>
 
 <script>
-const COLS = 4, FILAS = 8;
+const COLS = 4;
+let FILAS = 8;   // se recalcula para llenar la pantalla (nunca menos de 8)
 
 // Guardado local (si el navegador no deja, la app sigue funcionando sin memoria)
 const memoria = {};
@@ -489,38 +437,35 @@ function sonar(nombre) {
   if (audio()) SONIDOS[nombre](ctx.currentTime + .005);
 }
 
-const botonSnd = document.getElementById("snd");
-botonSnd.classList.toggle("on", sonidoOn);
-botonSnd.onclick = () => {
-  sonidoOn = !sonidoOn; guardar("sonido", sonidoOn);
-  botonSnd.classList.toggle("on", sonidoOn);
-  sonar("tecla");
-};
+try { if (navigator.audioSession) navigator.audioSession.type = "ambient"; } catch {}
 
 // Reinicia una animación CSS aunque la clase ya estuviera puesta
 function animar(el, clase) {
   el.classList.remove(clase); void el.offsetWidth; el.classList.add(clase);
 }
 
-const TEMAS = { crema: "#e6e2d8", gris: "#ff6a00", bauhaus: "#1d4fd8", noche: "#151515" };
-function ponerTema(t) {
-  if (!TEMAS[t]) t = "crema";
-  guardar("tema", t);
-  const pantalla = document.getElementById("pantalla");
-  pantalla.dataset.tema = t;
-  // La barra del sistema y el fondo de la app toman el color de la carcasa
-  const carcasa = getComputedStyle(pantalla).getPropertyValue("--carcasa").trim();
-  document.documentElement.style.setProperty("--fondo-app", carcasa);
-  document.querySelector('meta[name="theme-color"]').content = carcasa;
-  document.querySelectorAll(".temas button").forEach(b => b.classList.toggle("activo", b.dataset.t === t));
+// Acabados: color del reborde + juego de colores de los cubos. Se cambian tocando el reborde.
+const ACABADOS = [
+  { borde: "#ff5b1a", tema: "crema" },
+  { borde: "#2f5bd3", tema: "bauhaus" },
+  { borde: "#f5c400", tema: "gris" },
+  { borde: "#1f1f1f", tema: "noche" },
+  { borde: "#e9e5dc", tema: "crema" },
+];
+function ponerAcabado(i) {
+  i = ((i % ACABADOS.length) + ACABADOS.length) % ACABADOS.length;
+  guardar("acabado", i);
+  const { borde, tema } = ACABADOS[i];
+  document.documentElement.style.setProperty("--borde", borde);
+  document.getElementById("bandeja").dataset.tema = tema;
+  document.querySelector('meta[name="theme-color"]').content = borde;
 }
-Object.entries(TEMAS).forEach(([t, color]) => {
-  const b = document.createElement("button");
-  b.dataset.t = t; b.title = t; b.style.background = color;
-  b.onclick = () => { ponerTema(t); sonar("tecla"); };
-  document.getElementById("temas").appendChild(b);
+ponerAcabado(leer("acabado", 0));
+document.getElementById("objeto").addEventListener("click", e => {
+  if (e.target.id !== "objeto") return;
+  ponerAcabado(leer("acabado", 0) + 1);
+  sonar("tecla");
 });
-ponerTema(leer("tema", "crema"));
 
 const dos = n => String(n).padStart(2, "0");
 const DIAS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
@@ -820,15 +765,17 @@ function libre(b, x, y) {
 function colocar(b) { b.el.style.transform = `translate(${b.x * celda}px, ${b.y * celda}px)`; }
 
 function medir() {
-  celda = tablero.clientWidth / COLS;
+  const objeto = document.getElementById("objeto"), est = getComputedStyle(objeto);
+  const ancho = objeto.clientWidth, alto = objeto.clientHeight - parseFloat(est.paddingTop) - parseFloat(est.paddingBottom);
+  if (ancho < 50 || alto < 50) return;   // aún sin tamaño (pestaña oculta): ya llegará un resize
+  const reborde = Math.max(12, ancho * .04), hueco = 8;   // grosor del plástico y relleno de la bandeja
+  celda = Math.min((ancho - 2 * reborde - hueco) / COLS, (alto - 2 * reborde - hueco) / 8);
+  FILAS = Math.max(8, Math.floor((alto - 2 * reborde - hueco) / celda));
+  Object.assign(tablero.style, { width: COLS * celda + "px", height: FILAS * celda + "px" });
   tablero.style.setProperty("--u", celda + "px");
-  tablero.querySelectorAll(".hueco").forEach(h => h.remove());
-  for (let y = 0; y < FILAS; y++) for (let x = 0; x < COLS; x++) {
-    const h = document.createElement("div");
-    h.className = "hueco";
-    Object.assign(h.style, { left: x * celda + "px", top: y * celda + "px", width: celda + "px", height: celda + "px" });
-    tablero.prepend(h);
-  }
+  // Si una posición guardada ya no cabe o se pisa, todo vuelve a su sitio
+  const valido = bloques.every(b => libre(b, b.x, b.y));
+  if (!valido) bloques.forEach(b => { [b.x, b.y] = INICIO[b.id]; });
   bloques.forEach(b => {
     Object.assign(b.el.style, { width: b.cubo.w * celda + "px", height: b.cubo.h * celda + "px" });
     colocar(b);
@@ -857,32 +804,47 @@ bloques.forEach(b => {
     e.preventDefault();
     el.setPointerCapture(e.pointerId);
     el.classList.add("pulsado");
-    const x0 = e.clientX, y0 = e.clientY, bx = b.x, by = b.y;
-    let arrastrando = false;
+    let x0 = e.clientX, y0 = e.clientY, bx = b.x, by = b.y;
+    let arrastrando = false, eje = null;
+    const goma = o => Math.sign(o) * Math.min(10, Math.abs(o) * .18);
 
     const mover = ev => {
-      const dx = ev.clientX - x0, dy = ev.clientY - y0;
+      let dx = ev.clientX - x0, dy = ev.clientY - y0;
       if (!arrastrando && Math.hypot(dx, dy) < 8) return;
       if (!arrastrando) { arrastrando = true; el.classList.remove("pulsado"); el.classList.add("arrastrando"); sonar("coger"); }
-      const objX = bx + Math.round(dx / celda), objY = by + Math.round(dy / celda), antes = [b.x, b.y];
-      // Avanza casilla a casilla hacia el dedo, rodeando si hace falta
-      for (let i = 0; i < 20 && (b.x !== objX || b.y !== objY); i++) {
-        const sx = Math.sign(objX - b.x), sy = Math.sign(objY - b.y);
-        const pasos = Math.abs(objX - b.x) >= Math.abs(objY - b.y) ? [[sx, 0], [0, sy]] : [[0, sy], [sx, 0]];
-        const paso = pasos.find(([px, py]) => (px || py) && libre(b, b.x + px, b.y + py));
-        if (!paso) break;
-        b.x += paso[0]; b.y += paso[1];
+      // Los cubos van en carriles: o en horizontal o en vertical, nunca en diagonal.
+      // Para girar hay que estar encajado en una casilla, tirar claramente hacia el otro lado
+      // y que ese otro carril esté libre. "visible" es cuánto se ve desplazado el cubo
+      // respecto a su casilla (contra un tope, casi nada).
+      const visible = () => {
+        const raw = eje === "x" ? dx - (b.x - bx) * celda : dy - (b.y - by) * celda, s = Math.sign(raw);
+        const puede = eje === "x" ? libre(b, b.x + s, b.y) : libre(b, b.x, b.y + s);
+        return puede ? raw : goma(raw);
+      };
+      const resto = eje ? visible() : 0, otro = eje === "x" ? dy : dx;
+      const otroLibre = eje === "x" ? libre(b, b.x, b.y + Math.sign(dy)) : libre(b, b.x + Math.sign(dx), b.y);
+      const girar = eje && Math.abs(resto) < celda * .2 && Math.abs(otro) > celda * .4 && otroLibre;
+      if (!eje || girar) {
+        // Al girar se recoloca solo el eje que se deja, para que el cubo no dé un salto
+        if (eje === "x") { x0 = ev.clientX - resto; bx = b.x; }
+        if (eje === "y") { y0 = ev.clientY - resto; by = b.y; }
+        dx = ev.clientX - x0; dy = ev.clientY - y0;
+        eje = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
       }
-      if (b.x !== antes[0] || b.y !== antes[1]) sonar("paso");
-      // El cubo sigue al dedo entre casillas; contra una pared solo cede un poco
-      const goma = o => Math.sign(o) * Math.min(10, Math.abs(o) * .18);
-      const ajustar = (o, masLibre, menosLibre) =>
-        (o > 0 && !masLibre) || (o < 0 && !menosLibre) ? goma(o) : Math.max(-celda / 2, Math.min(celda / 2, o));
-      let ox = ajustar(bx * celda + dx - b.x * celda, libre(b, b.x + 1, b.y), libre(b, b.x - 1, b.y));
-      let oy = ajustar(by * celda + dy - b.y * celda, libre(b, b.x, b.y + 1), libre(b, b.x, b.y - 1));
-      if (Math.abs(ox) > 10 && Math.abs(oy) > 10 && !libre(b, b.x + Math.sign(ox), b.y + Math.sign(oy))) {
-        if (Math.abs(ox) > Math.abs(oy)) oy = goma(oy); else ox = goma(ox);
+      const d = eje === "x" ? dx : dy, ini = eje === "x" ? bx : by;
+      const pos = () => eje === "x" ? b.x : b.y;
+      const libreA = s => eje === "x" ? libre(b, b.x + s, b.y) : libre(b, b.x, b.y + s);
+      const objetivo = ini + Math.round(d / celda), antes = pos();
+      while (pos() !== objetivo) {
+        const s = Math.sign(objetivo - pos());
+        if (!libreA(s)) break;
+        if (eje === "x") b.x += s; else b.y += s;
       }
+      if (pos() !== antes) sonar("paso");
+      // Entre casillas el cubo sigue al dedo; contra un tope solo cede un poco
+      let o = ini * celda + d - pos() * celda;
+      o = (o > 0 && !libreA(1)) || (o < 0 && !libreA(-1)) ? goma(o) : Math.max(-celda / 2, Math.min(celda / 2, o));
+      const [ox, oy] = eje === "x" ? [o, 0] : [0, o];
       el.style.transform = `translate(${b.x * celda + ox}px, ${b.y * celda + oy}px)`;
     };
     const soltar = ev => {
@@ -905,9 +867,6 @@ bloques.forEach(b => {
 });
 
 function tic() {
-  const d = new Date();
-  document.getElementById("hora").textContent = `${d.getHours()}:${dos(d.getMinutes())}`;
-  document.getElementById("subtitulo").textContent = `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]} · S${semana(d)}`;
   bloques.forEach(b => b.cubo.cadaSegundo && b.cubo.pintar(b.cara, true));
 }
 setInterval(tic, 1000);
