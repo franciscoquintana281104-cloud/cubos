@@ -967,7 +967,23 @@ medir();
 // Se vuelve a medir siempre que el objeto cambie de tamaño (girar, abrir la app, ventana)
 if (window.ResizeObserver) new ResizeObserver(() => medir()).observe(document.getElementById("objeto"));
 else window.addEventListener("resize", medir);
-if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js");
+// Actualizaciones: al registrar, y cada vez que la app vuelve a primer plano (el iPhone la
+// deja dormida en memoria y no recarga), se pregunta si hay versión nueva. Si la hay, el
+// service worker nuevo toma el control y la página se recarga una vez, sola.
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => {
+    const comprobar = () => reg.update().catch(() => {});
+    document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && comprobar());
+    setInterval(comprobar, 30 * 60 * 1000);
+  });
+  let recargando = false;
+  const habiaControl = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!habiaControl || recargando) return;   // la primera instalación no necesita recargar
+    recargando = true;
+    location.reload();
+  });
+}
 document.fonts?.ready.then(medir);
 </script>
 </body>
