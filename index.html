@@ -176,7 +176,7 @@
   .tablero:not(.listo) .bloque { transition: none; }
   .bloque.arrastrando { z-index: 5; transition: none; }
   .cara {
-    width: 100%; height: 100%; border-radius: 13px; overflow: hidden; position: relative;
+    width: 100%; height: 100%; border-radius: 13px; overflow: hidden; position: relative; contain: layout paint;
     background: var(--fondo); color: var(--letra);
     box-shadow:
       inset 0 0 0 1px rgba(0,0,0,.07),
@@ -197,7 +197,6 @@
       radial-gradient(circle, rgba(0,0,0,.28) 1.3px, transparent 1.8px);
     background-size: 6px 6px; background-repeat: no-repeat;
     background-position: 0 0, 100% 0, 0 100%, 100% 100%;
-    mix-blend-mode: multiply;
   }
 
   .titulo {
@@ -523,7 +522,7 @@
     border-radius: 10px;
   }
   .rl-estacion { align-items: center; justify-content: center; }
-  .rl-estacion svg { width: 94%; height: 94%; filter: drop-shadow(0 1.5px 1.5px rgba(0,0,0,.25)); }
+  .rl-estacion svg { width: 94%; height: 94%; border-radius: 50%; box-shadow: 0 1.5px 2px rgba(0,0,0,.22); }
   .rl-estacion .remache { position: absolute; width: 5px; height: 5px; border-radius: 50%;
     background: radial-gradient(circle at 35% 30%, #fff, #8d9197 70%); box-shadow: 0 .5px 1px rgba(0,0,0,.4); }
   .cara.sin-segundero .rl-estacion .aguja.seg { opacity: 0; }
@@ -599,7 +598,6 @@
       radial-gradient(circle, #fafafa 0 .9px, #8b9096 1.5px, rgba(0,0,0,.25) 2px, transparent 2.4px),
       radial-gradient(circle, #fafafa 0 .9px, #8b9096 1.5px, rgba(0,0,0,.25) 2px, transparent 2.4px),
       radial-gradient(circle, #fafafa 0 .9px, #8b9096 1.5px, rgba(0,0,0,.25) 2px, transparent 2.4px);
-    mix-blend-mode: normal;
   }
   .cara[data-cuerpo="papel"] {
     color: #29251f;
@@ -887,7 +885,8 @@
   .d-osc .crt::before { content: ""; position: absolute; inset: 0;
     background: linear-gradient(rgba(90,255,150,.1) 1px, transparent 1px) 0 0 / 100% 20%, linear-gradient(90deg, rgba(90,255,150,.1) 1px, transparent 1px) 0 0 / 12.5% 100%; }
   .d-osc .crt svg { position: absolute; left: 0; top: 0; width: 200%; height: 100%; animation: ola 3s linear infinite; }
-  .d-osc .crt path { fill: none; stroke: #6dffa6; stroke-width: 1.6; filter: drop-shadow(0 0 3px #4dff8c); vector-effect: non-scaling-stroke; }
+  .d-osc .crt path { fill: none; stroke: #6dffa6; stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+  .d-osc .crt path.brillo { stroke: rgba(77,255,140,.25); stroke-width: 5; }
   .d-osc .crt .amp { transform-origin: 50% 50%; transform: scaleY(.15); height: 100%; position: absolute; inset: 0; }
   .d-osc.activo .crt .amp { animation: amplitud 8s ease-in-out infinite; }
   @keyframes amplitud { 0%, 100% { transform: scaleY(.15); } 50% { transform: scaleY(1); } }
@@ -942,6 +941,19 @@ const leer = (k, def) => {
   try { const v = localStorage.getItem("cubos." + k); if (v !== null) return memoria[k] = JSON.parse(v); } catch {}
   return def;
 };
+
+// Grano del plástico: un azulejo de ruido pintado una sola vez. Antes era un filtro SVG
+// que el iPhone recalculaba en cada superficie, y era la mayor causa de tirones.
+(function granoEnLienzo() {
+  try {
+    const lado = 128, lienzo = document.createElement("canvas");
+    lienzo.width = lienzo.height = lado;
+    const g = lienzo.getContext("2d"), img = g.createImageData(lado, lado);
+    for (let i = 0; i < img.data.length; i += 4) img.data[i + 3] = Math.random() * 26;
+    g.putImageData(img, 0, 0);
+    document.documentElement.style.setProperty("--grano", `url(${lienzo.toDataURL("image/png")})`);
+  } catch {}
+})();
 
 // ── Sonido: todo sintetizado al vuelo, sin archivos ─────────
 
@@ -1300,7 +1312,11 @@ const CUBOS = {
     barrer(c) {
       const dis = c.dataset.diseno, d = new Date();
       const h = d.getHours() % 12, m = d.getMinutes(), s = d.getSeconds(), ms = d.getMilliseconds();
-      const poner = (k, a) => { const e = c.querySelector(".aguja." + k); if (e) e.style.transform = `rotate(${a}deg)`; };
+      const poner = (k, a) => {
+        const e = c.querySelector(".aguja." + k); if (!e) return;
+        const t = `rotate(${a.toFixed(2)}deg)`;
+        if (e._t !== t) { e._t = t; e.style.transform = t; }   // sin cambio, sin repintado
+      };
       if (dis === "braun") {
         // Cuarzo: el segundero salta cada segundo con un golpe seco y un mínimo rebote
         const t = Math.min(1, ms / 150);
@@ -1318,9 +1334,13 @@ const CUBOS = {
         const p = c.querySelector(".puntos"); if (p) p.style.opacity = ms < 500 ? 1 : .07;
       } else if (dis === "anillos") {
         // Tres anillos de cristal que se llenan: horas, minutos y segundos (continuos)
+        // Los anillos se montan una vez; luego solo cambia cuánto está lleno cada uno
         const g = c.querySelector(".arcos"); if (!g) return;
-        const seg = s + ms / 1000;
-        g.innerHTML = arco(44, (h + m / 60) / 12, 6, "url(#irisA)") + arco(35, (m + seg / 60) / 60, 6, "url(#irisB)") + arco(26.5, seg / 60, 3, "#2b2540");
+        if (!g.firstChild) g.innerHTML = arco(44, 0, 6, "url(#irisA)") + arco(35, 0, 6, "url(#irisB)") + arco(26.5, 0, 3, "#2b2540");
+        const seg = s + ms / 1000, llenos = g.querySelectorAll("circle:nth-child(2n)");
+        [[44, (h + m / 60) / 12], [35, (m + seg / 60) / 60], [26.5, seg / 60]].forEach(([r, f], i) => {
+          const L = 2 * Math.PI * r; llenos[i]?.setAttribute("stroke-dasharray", `${(L * f).toFixed(2)} ${L.toFixed(2)}`);
+        });
       }
     },
 
@@ -1851,7 +1871,7 @@ Object.assign(CUBOS, {
         cuerpo: "resina",
         montar(c) {
           let d = "M0 50"; for (let x = 0; x <= 400; x += 5) d += ` L${x} ${50 - 38 * Math.sin(x / 400 * Math.PI * 8)}`;
-          c.innerHTML = `<div class="d-osc"><div class="crt"><div class="amp"><svg viewBox="0 0 400 100" preserveAspectRatio="none"><path d="${d}"/></svg></div></div><div class="pie"><span class="etq estado">toca para empezar</span><span class="lampara"></span></div></div>`;
+          c.innerHTML = `<div class="d-osc"><div class="crt"><div class="amp"><svg viewBox="0 0 400 100" preserveAspectRatio="none"><path class="brillo" d="${d}"/><path d="${d}"/></svg></div></div><div class="pie"><span class="etq estado">toca para empezar</span><span class="lampara"></span></div></div>`;
         },
         tocar(c) {
           const o = c.querySelector(".d-osc"), on = o.classList.toggle("activo");
@@ -1997,11 +2017,10 @@ const deslizando = new Set();
 const SEGUIR = 38;          // lo pegado que va al dedo (más = más directo)
 const ROCE = 5;             // rozamiento de la inercia (más = frena antes)
 
-function pintarPos(b) {
-  b.el.style.transform = `translate3d(${b.x * celda}px, ${b.y * celda}px, 0)`;
-  b.el.style.setProperty("--col", b.x.toFixed(2));
-}
-function colocar(b) { deslizando.delete(b); pintarPos(b); }
+function pintarPos(b) { b.el.style.transform = `translate3d(${b.x * celda}px, ${b.y * celda}px, 0)`; }
+// La columna solo se usa para el paralaje al pasar de página: se apunta cuando el cubo se para
+const fijarColumna = b => b.el.style.setProperty("--col", b.x.toFixed(2));
+function colocar(b) { deslizando.delete(b); pintarPos(b); fijarColumna(b); }
 
 // Mueve el cubo en su eje hasta "destino" (en casillas) sin atravesar nada. Devuelve si chocó.
 function avanzar(b, eje, destino) {
@@ -2057,7 +2076,7 @@ function soltarCubo(b, ev) {
   }
   const v = performance.now() - a.tUlt > 80 ? 0 : Math.max(-30, Math.min(30, a.v));
   if (Math.abs(v) > .8) { b.desliz = { eje: a.eje, v }; deslizando.add(b); }
-  else guardarPosiciones();
+  else { guardarPosiciones(); fijarColumna(b); }
 }
 
 const guardarPosiciones = () => guardar("posiciones", Object.fromEntries(bloques.map(o => [o.id, [+o.x.toFixed(4), +o.y.toFixed(4)]])));
@@ -2092,7 +2111,7 @@ function pasoFisica(dt) {
     if (choco || Math.abs(s.v) < .05) {
       if (choco) sonar(Math.abs(s.v) > 3 ? "soltar" : "paso");
       deslizando.delete(b); b.desliz = null;
-      guardarPosiciones();
+      guardarPosiciones(); fijarColumna(b);
     }
     pintarPos(b);
   });
@@ -2412,7 +2431,11 @@ function tic() {
 }
 setInterval(tic, 1000);
 const reloj = bloques.find(b => b.id === "reloj");
-(function fotograma() { reloj.cubo.barrer(reloj.cara); requestAnimationFrame(fotograma); })();
+(function fotograma() {
+  // Solo se anima el reloj si está en la página que se ve (o pasando por ella) y la app está delante
+  if (reloj && document.visibilityState === "visible" && Math.abs(reloj.pag - pag.p) < 1) reloj.cubo.barrer(reloj.cara);
+  requestAnimationFrame(fotograma);
+})();
 tic();
 medir();
 // Entrada escalonada de la página visible, de arriba abajo
